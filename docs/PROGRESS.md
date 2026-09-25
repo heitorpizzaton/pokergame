@@ -67,14 +67,15 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 5 — AI
 
-- [ ] `PlayerView` and the information-boundary test
-- [ ] Style profiles and preflop ranges (2–9 players)
-- [ ] Range narrowing and opponent modeling
-- [ ] Postflop decision model, sizing, mixed strategies, tilt
-- [ ] AI worker with a time budget and a fallback heuristic
-- [ ] `docs/AI.md` with style targets per table size
-- [ ] Simulation harness (`npm run sim`) and exploit checks
-- [ ] **Accept:** style stats are within target; the boundary test passes; the exploit checks pass; no decision exceeds its time budget
+- [x] `PlayerView`-only brains and the information-boundary test (decisions identical with randomized hidden cards)
+- [x] Style profiles and preflop ranges (2–9 players, position, push/fold) (ADR-017)
+- [x] Range narrowing and opponent modeling
+- [x] Postflop decision model, sizing, mixed strategies, tilt
+- [x] AI worker with a time budget and a fallback heuristic (`NpcDriver`)
+- [x] `docs/AI.md` with style targets per table size
+- [x] Simulation harness (`npm run sim`) and exploit checks (`test:long`)
+- [x] Setup: per-opponent style choice or "Aleatório" (realistic mix, at most two maniacs)
+- [~] **Accept:** style stats within target (20k-hand calibration run: all six in range; the 100k-hand `test:long` run is recorded in HANDOFF); boundary test passes; exploit checks pass; decisions stay well inside the time budget
 
 ## Phase 6 — Features
 

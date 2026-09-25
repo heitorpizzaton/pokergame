@@ -4,6 +4,54 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 8) — Claude — Phase 5 AI
+
+**Branch:** `feat/phase-5-ai`.
+
+### Done
+
+- `src/ai/`: `NpcBrain`, view analysis, hand ordering, preflop ranges, opponent model, range narrowing, equity against ranges, board texture, postflop decisions, sanity guard, six style profiles and the random mix (ADR-017, `docs/AI.md`).
+- `src/app/npc-driver.ts` (`LocalNpcDriver`) and `src/workers/ai.worker.ts` / `ai-client.ts` (`WorkerNpcDriver`). The controller now runs brains through a driver, falls back to the heuristic at the 1.5 s cap, feeds NPCs every hand's public record, and lets winners occasionally show by style.
+- Setup: "Escolher o estilo de cada oponente", with pt-BR style labels.
+- `npm run sim` (`scripts/sim.ts`, `scripts/sim-core.ts`).
+- Tests:
+  - Sanitize and the hand order.
+  - Random mix (at most two maniacs).
+  - The information boundary over more than 2,000 decisions.
+  - Legality, no nut folds and decision times in simulation.
+  - Style ordering, tilt, and the controller with sync and async drivers including the fallback.
+  - e2e for choosing styles.
+  - `tests/long/ai-sim.test.ts`: 100k-hand targets, TAG beating stations and maniacs, and both exploit bots losing.
+
+### Half-done
+
+- The long AI run (about 190k simulated hands) was started locally when the PR opened. Its result goes into the PR and into `PROGRESS.md` before merge.
+
+### Exact next step
+
+Phase 6 on `feat/phase-6-features`:
+
+1. Settings screen and storage.
+2. Odds panel (uses `EquityClient`, `drawOdds`, `preflopClass`, `assessCall`).
+3. Time bank (use `timeoutAction` and mark the user "Ausente").
+4. Rabbit hunt (`engine.rabbitHunt()`).
+5. Hand history in IndexedDB, off by default, with replayer and export.
+6. Autosave and "Continuar partida" (`engine.snapshot()` between hands; controller restore).
+
+### Known issues
+
+- The style badge is not shown yet, because it depends on the Phase 6 setting "Mostrar estilo dos NPCs".
+
+### Verify
+
+```sh
+npm ci
+npm run check
+npm run sim -- --hands 5000 --players 6 --mix random
+```
+
+---
+
 ## 2026-09-25 (session 1, part 7) — Claude — Phase 4 playable UI
 
 **Branch:** `feat/phase-4-ui` (built in a separate worktree while Phase 3 was generating its table; it includes the Phase 3 branch and is merged after it).
