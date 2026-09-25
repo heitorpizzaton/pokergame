@@ -17,9 +17,25 @@ export const mathRandomBan = {
     {
       object: 'Math',
       property: 'random',
-      message: 'Math.random() is forbidden (AGENTS.md §2.1). Use the SecureRng from src/core/rng.',
+      message: 'Math.random() is forbidden (AGENTS.md §2.1). Use CryptoRng from src/core/rng.',
     },
   ],
+} satisfies Linter.RulesRecord;
+
+/**
+ * AGENTS.md §4.1: the seeded RNG must be unreachable from production builds. Nothing under `src/`
+ * may import it; only tests and scripts can.
+ */
+const seededRngPattern = {
+  // Gitignore-style: a pattern without a slash matches the file name at any depth, so this also
+  // catches `./seeded-rng.ts` from inside src/core/rng.
+  group: ['seeded-rng', 'seeded-rng.*'],
+  message: 'The seeded RNG is for tests only and must not reach production code (AGENTS.md §4.1).',
+};
+
+/** Import restrictions that apply to every file under `src/`. */
+export const srcImportRestrictions = {
+  'no-restricted-imports': ['error', { patterns: [seededRngPattern] }],
 } satisfies Linter.RulesRecord;
 
 const ENGINE_MESSAGE =
@@ -34,6 +50,7 @@ export const aiImportRestrictions = {
     'error',
     {
       patterns: [
+        seededRngPattern,
         { group: ['**/core/engine', '**/core/engine/**'], message: ENGINE_MESSAGE },
         {
           group: [
@@ -64,6 +81,7 @@ export const coreImportRestrictions = {
     'error',
     {
       patterns: [
+        seededRngPattern,
         {
           group: ['react', 'react-dom', 'react/*', 'react-dom/*', 'zustand', 'zustand/*'],
           message: 'src/core must stay framework-agnostic (AGENTS.md §4).',
@@ -129,11 +147,17 @@ export default defineConfig(
     rules: {
       ...mathRandomBan,
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      // With noUncheckedIndexedAccess, hot loops read typed arrays as `arr[i] as number`. This
+      // stylistic rule would demand `arr[i]!`, which `no-non-null-assertion` (strict) forbids.
+      '@typescript-eslint/non-nullable-type-assertion-style': 'off',
     },
   },
   {
+    // Later blocks that also configure no-restricted-imports (core, ai) replace this rule, so
+    // each of them repeats the seeded-RNG pattern.
     files: ['src/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.browser },
+    rules: srcImportRestrictions,
   },
   {
     files: ['src/ui/**/*.tsx', 'src/app/**/*.tsx'],
