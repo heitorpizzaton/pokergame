@@ -23,6 +23,26 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
   - Leaving it as is: about one spurious red CI run in 200.
 - **Consequences:** a perfect RNG fails at most 0.1% of runs. A bias of about 4 standard deviations in any single frequency still fails every time. The long workflow (10M deals) keeps its own 99.9% intervals.
 
+## ADR-026 — Deck commitment ("Prova de justiça")
+
+- **Date:** 2026-09-25
+- **Context:** Phase 8 (optional) asks for a SHA-256 commitment to the shuffled deck plus a secret salt before each hand, a reveal in the history afterwards, and a "Verificar" button.
+- **Decision:**
+  - **Commitment:** right after the engine shuffles and deals, before the snapshot is published, `GameController` computes `SHA-256("mesa-viva-deck-v1:" + deck in dealing order ("As Kd …") + ":" + salt)`. The salt is 128 bits from a separate `fairnessRng`, so the deck and NPC streams are unchanged.
+  - **What the snapshot shows:** only the hash. The table shows its first 8 hex digits, with the full hash in the label.
+  - **Reveal:** when the hand ends, `CompletedHand.fairness` carries the hash, salt, deck and deal order. It is stored in the history only when the history is on.
+  - **Verification:** "Verificar" (`checkFairness`) recomputes the hash and checks that the user's cards, the board (after burns) and every shown hand sit at their deal positions in the revealed deck.
+  - **SHA-256:** a small synchronous implementation (`src/core/fairness/sha256.ts`), tested against the NIST vectors and WebCrypto, so the commitment exists before the first render.
+  - **Independent check:** the panel shows the exact preimage text for any external SHA-256 tool.
+- **Alternatives considered:**
+  - WebCrypto `digest`: asynchronous, so the hash could appear after the hand had already started.
+  - Committing a seed instead of the deck: reveals the RNG state and ties verification to our shuffle code.
+- **Consequences:**
+  - The revealed deck also shows cards the NPCs mucked. That is inherent to proving the whole deck, and it only appears after the hand, in the history.
+  - NPCs never see any of it.
+  - Hand events stay redacted as before.
+  - Records saved before this change have no proof, and the panel says so.
+
 ## ADR-025 — Table effects, CSS animation and synthesized sound
 
 - **Date:** 2026-09-25

@@ -11,6 +11,8 @@ export interface RngFactory {
   npc(): Rng;
   /** Decisions of one NPC brain. */
   brain(seat: number): Rng;
+  /** Salts for the deck commitments (Phase 8). */
+  fairness(): Rng;
   /** Whether NPC brains may run in a worker (the seeded build keeps them in-process). */
   readonly workers: boolean;
   /**
@@ -24,5 +26,6 @@ export const cryptoRngFactory: RngFactory = {
   deck: () => new CryptoRng(),
   npc: () => new CryptoRng(),
   brain: () => new CryptoRng(),
+  fairness: () => new CryptoRng(),
   workers: true,
 };

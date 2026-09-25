@@ -11,7 +11,8 @@ import {
   timeoutAction,
 } from '../core/engine/index.ts';
 import type { HandValue } from '../core/eval/index.ts';
-import type { Rng } from '../core/rng/index.ts';
+import { commitDeck, newSalt } from '../core/fairness/index.ts';
+import { CryptoRng, type Rng } from '../core/rng/index.ts';
 import type { ActionRecord, PlayerAction, PlayerView } from '../core/view/index.ts';
 import type { NpcDriver } from './npc-driver.ts';
 import { type SavedStats, type SessionStats, SessionStatsTracker } from './session-stats.ts';
@@ -109,6 +110,21 @@ export interface TableSnapshot {
   readonly dealOrder: readonly number[];
   /** Bets gathered into the pot at the last street end (animated once per `id`). */
   readonly collected: CollectedBets | null;
+  /** SHA-256 commitment to this hand's deck, published before the hand is shown (Phase 8). */
+  readonly commitment: string | null;
+}
+
+/** Revealed after the hand so the commitment can be checked (AGENTS.md §14, Phase 8). */
+export interface FairnessProof {
+  readonly hash: string;
+  readonly salt: string;
+  /** The whole shuffled deck in dealing order. */
+  readonly deck: readonly Card[];
+  /**
+   * The seat that received each hole card, in dealing order (deck positions 0, 1, …). The board
+   * follows, with a burn before each street.
+   */
+  readonly dealOrder: readonly number[];
 }
 
 export interface CollectedBets {
@@ -145,6 +161,8 @@ export interface CompletedHand {
   readonly names: readonly string[];
   /** Events of the hand as the user saw them (other players' hidden cards redacted). */
   readonly events: readonly { readonly at: number; readonly event: EngineEvent }[];
+  /** The deck commitment and its reveal, now that the hand is over. */
+  readonly fairness: FairnessProof | null;
 }
 
 export interface ControllerOptions {
@@ -153,6 +171,8 @@ export interface ControllerOptions {
   readonly deckRng: Rng;
   /** NPC decisions and timing (separate stream, AGENTS.md §6). */
   readonly npcRng: Rng;
+  /** Salts for the deck commitments (a separate stream so it never shifts the deck or NPCs). */
+  readonly fairnessRng?: Rng;
   readonly scheduler?: Scheduler;
   readonly speed?: Speed;
   readonly userSeat?: number;
@@ -233,6 +253,8 @@ export class GameController {
   #handStartedAt = 0;
   #dealOrder: number[] = [];
   #collected: CollectedBets | null = null;
+  #commitment: { hash: string; salt: string; deck: readonly Card[] } | null = null;
+  readonly #fairnessRng: Rng;
   #collectId = 0;
   #announcedTurn: string | null = null;
   #gameOverNotified = false;
@@ -261,6 +283,7 @@ export class GameController {
     this.#timeBankMs = saved?.timeBankMs ?? this.#timerSettings.bankMs;
     this.#userHands = saved?.userHands ?? 0;
     this.#rabbitEnabled = options.rabbitHunt ?? false;
+    this.#fairnessRng = options.fairnessRng ?? new CryptoRng();
     this.#snapshot = this.#buildSnapshot();
   }
 
@@ -441,6 +464,11 @@ export class GameController {
     this.#handStartedAt = this.#scheduler.now();
     this.#absorb(this.#engine.dispatch({ type: 'startHand' }), 0, null);
     const hand = this.#engine.state.hand;
+    // Commit to the deck before anything is shown (Phase 8). The deck itself stays private.
+    if (hand) {
+      const salt = newSalt(this.#fairnessRng);
+      this.#commitment = { hash: commitDeck(hand.deck, salt), salt, deck: [...hand.deck] };
+    }
     if (hand?.players[this.#userSeat]) {
       this.#userHands++;
       if (this.#userHands % BANK_REFILL_EVERY === 0) {
@@ -725,6 +753,12 @@ export class GameController {
       userHole: view.holeCards,
       names: this.#engine.state.seats.map((s) => s.name),
       events: [...this.#handLog],
+      fairness: this.#commitment && {
+        hash: this.#commitment.hash,
+        salt: this.#commitment.salt,
+        deck: this.#commitment.deck,
+        dealOrder: [...this.#dealOrder],
+      },
     });
   }
 
@@ -852,6 +886,7 @@ export class GameController {
       styles: this.#styles,
       dealOrder: [...this.#dealOrder],
       collected: this.#collected,
+      commitment: this.#commitment?.hash ?? null,
     };
   }
 
