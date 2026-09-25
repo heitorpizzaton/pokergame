@@ -4,6 +4,28 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 12) — Claude — shuffle test significance fix
+
+**Branch:** `fix/shuffle-test-family-alpha`.
+
+### Done
+
+- `tests/statistical/shuffle-fairness.test.ts` now runs at a family-wise alpha of 0.001, Bonferroni-corrected across its five checks (ADR-027). CI had failed once on a pocket-pair count 3.6 σ high. Two follow-up samples of 2,000,000 shuffles each showed no bias (pocket-pair z = 0.54 and 0.60).
+
+- PR #13 (Phase 8) passed CI on a dedicated runner, including `tests/perf`, and is merged.
+
+### Exact next step
+
+- Every phase in `AGENTS.md` Section 14 is implemented. What is left is for the owner: review the visual baselines and complete the owner-only items in `docs/QA.md`.
+
+### Verify
+
+```bash
+npx vitest run tests/statistical/shuffle-fairness.test.ts
+```
+
+---
+
 ## 2026-09-25 (session 1, part 11) — Claude — Phase 8 fairness proof (optional)
 
 **Branch:** `feat/phase-8-fairness`.

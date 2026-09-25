@@ -7,13 +7,16 @@ import { binomialBounds, chiSquarePValue, chiSquareUniform } from '../support/st
 /**
  * Fast fairness tests (AGENTS.md §13.2): at least 200,000 shuffles of the production CryptoRng.
  *
- * Significance: the combined position × card test runs at alpha = 0.001. The 52 per-position
- * tests share that same 0.001 budget through a Bonferroni correction (0.001 / 52 each), so the
- * family of tests has at most a 0.1% false-alarm rate instead of the ~5% that 52 independent
- * tests at 0.001 would give. Each starting-hand frequency check also runs at alpha = 0.001.
+ * Significance: the whole file runs at a family-wise alpha of 0.001 (ADR-027). The shuffles are
+ * fresh on every run, so each independent check at 0.001 would add its own 0.1% chance of failing
+ * a perfect RNG; five such checks fail about 0.5% of CI runs. A Bonferroni correction splits the
+ * 0.001 budget across the five families: the combined position × card test, the 52 per-position
+ * tests (which split their share again, 52 ways), and the three starting-hand frequencies.
  */
 const SHUFFLES = 200_000;
 const ALPHA = 0.001;
+const FAMILIES = 5;
+const FAMILY_ALPHA = ALPHA / FAMILIES;
 
 const positionCounts = new Uint32Array(52 * 52); // [position * 52 + card]
 let pocketPairs = 0;
@@ -44,11 +47,11 @@ describe(`shuffle fairness over ${SHUFFLES.toLocaleString('en-US')} crypto shuff
   it('position × card table is uniform (combined chi-square, df = 51 × 51)', () => {
     // With both margins fixed at SHUFFLES, a 52×52 contingency table has 51 × 51 degrees of freedom.
     const stat = chiSquareUniform(positionCounts);
-    expect(chiSquarePValue(stat, 51 * 51)).toBeGreaterThan(ALPHA);
+    expect(chiSquarePValue(stat, 51 * 51)).toBeGreaterThan(FAMILY_ALPHA);
   });
 
   it('every card is uniform at every position (Bonferroni-corrected)', () => {
-    const perTestAlpha = ALPHA / 52;
+    const perTestAlpha = FAMILY_ALPHA / 52;
     for (let pos = 0; pos < 52; pos++) {
       const row = positionCounts.subarray(pos * 52, pos * 52 + 52);
       const p = chiSquarePValue(chiSquareUniform(row), 51);
@@ -60,8 +63,8 @@ describe(`shuffle fairness over ${SHUFFLES.toLocaleString('en-US')} crypto shuff
     { name: 'pocket pair', count: () => pocketPairs, p: 3 / 51 }, // ≈ 5.88%
     { name: 'suited', count: () => suitedHands, p: 12 / 51 }, // ≈ 23.53%
     { name: 'pocket aces', count: () => pocketAces, p: 6 / 1326 }, // ≈ 0.452%
-  ])('$name frequency is within its alpha = 0.001 bounds', ({ count, p }) => {
-    const { lower, upper } = binomialBounds(p, SHUFFLES, ALPHA);
+  ])('$name frequency is within its Bonferroni-corrected bounds', ({ count, p }) => {
+    const { lower, upper } = binomialBounds(p, SHUFFLES, FAMILY_ALPHA);
     expect(count()).toBeGreaterThanOrEqual(lower);
     expect(count()).toBeLessThanOrEqual(upper);
   });

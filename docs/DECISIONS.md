@@ -4,6 +4,28 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-027 — The shuffle fairness tests share one 0.001 significance budget
+
+- **Date:** 2026-09-25
+- **Context:** Section 13.2 runs the fast fairness tests "at a significance of 0.001" on fresh `CryptoRng` shuffles, so every CI run draws a new sample. The file had five independent checks, each at 0.001:
+  - the combined position × card chi-square;
+  - the per-position family, already Bonferroni-corrected within itself;
+  - the pocket pair, suited and AA frequencies.
+- **Problem:** a perfect RNG therefore failed about 0.5% of runs. This happened on PR #13: the pocket-pair count was 3.6 σ high. Two follow-up samples of 2,000,000 shuffles each gave pocket-pair z = 0.54 and 0.60, suited z = −0.96 and 0.04, and AA z = −0.03 and −0.01, so the RNG is not biased.
+- **Decision:** treat 0.001 as the family-wise significance of the whole file.
+  - A Bonferroni correction gives each of the five families 0.0002.
+  - The 52 per-position tests split their share again, to 0.0002 / 52 each.
+  - The two-sided z bound for the frequencies moves from 3.29 to 3.72 standard deviations.
+  - The deterministic seeded Fisher-Yates check is unaffected.
+- **Alternatives considered:**
+  - Seeding the shuffles: this would no longer test the production RNG.
+  - Retrying on failure: this hides real bias.
+  - Leaving it as is: about one spurious red CI run in 200.
+- **Consequences:**
+  - A perfect RNG fails at most 0.1% of runs.
+  - Power stays high: a true shift of 6 standard deviations in a frequency is still caught about 99% of the time, against 99.7% before. For pocket pairs at 200,000 shuffles, 6 standard deviations is about 0.32 percentage points.
+  - The long workflow (10M deals) keeps its own 99.9% intervals.
+
 ## ADR-026 — Deck commitment ("Prova de justiça")
 
 - **Date:** 2026-09-25
