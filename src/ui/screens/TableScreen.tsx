@@ -117,6 +117,21 @@ export function TableScreen({
 
       <section className={styles.tableArea} aria-live="polite">
         <div className={styles.felt} />
+        {/* Pinned to the top of the table so it stays put while hands play on (ADR-018). */}
+        {snap.away && (
+          <div className={styles.away} role="status">
+            <span>{strings.table.away}</span>
+            <button
+              type="button"
+              className={styles.textButton}
+              onClick={() => {
+                controller.setAway(false);
+              }}
+            >
+              {strings.table.back}
+            </button>
+          </div>
+        )}
         {view.seats.map((seat) => {
           const pos = positions[visualSlot(seat.seat, userSeat, view.seats.length)] ?? {
             x: 50,
@@ -190,20 +205,6 @@ export function TableScreen({
       </section>
 
       <footer className={styles.footer}>
-        {snap.away && (
-          <div className={styles.away} role="status">
-            <span>{strings.table.away}</span>
-            <button
-              type="button"
-              className={styles.textButton}
-              onClick={() => {
-                controller.setAway(false);
-              }}
-            >
-              {strings.table.back}
-            </button>
-          </div>
-        )}
         {settings.oddsPanel && userInHand && view.holeCards && view.street !== null && (
           <OddsPanel
             view={view}
