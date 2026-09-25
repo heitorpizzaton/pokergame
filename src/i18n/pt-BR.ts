@@ -27,6 +27,8 @@ export const ptBR = {
     opponents: 'Oponentes',
     randomMix: 'Aleatório',
     randomMixHint: 'Uma mistura de estilos, como numa mesa real',
+    chooseStyles: 'Escolher o estilo de cada oponente',
+    opponentLabel: (n: number) => `Oponente ${n}`,
     start: 'Começar',
     back: 'Voltar',
     errors: {
@@ -107,6 +109,14 @@ export const ptBR = {
     confirmQuit: 'Sair da partida? O progresso desta partida será perdido.',
     confirmQuitYes: 'Sair',
     confirmQuitNo: 'Cancelar',
+  },
+  styles: {
+    tag: 'Regular sólido (TAG)',
+    lag: 'Agressivo (LAG)',
+    nit: 'Pedra (Nit)',
+    station: 'Pagador (Calling station)',
+    maniac: 'Maníaco',
+    rec: 'Recreativo',
   },
   summary: {
     busted: 'Você foi eliminado',

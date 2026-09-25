@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { STYLE_IDS, type StyleId } from '../../ai/index.ts';
 import {
   BUY_IN_PRESETS,
   checkSetup,
@@ -6,6 +7,7 @@ import {
   type GameSetup,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  opponentStyles,
 } from '../../app/setup.ts';
 import { formatBigBlinds, formatChips, strings } from '../../i18n/index.ts';
 import { seatPositions } from '../table/seat-layout.ts';
@@ -155,10 +157,51 @@ export function SetupScreen({ initial, onStart, onBack }: Props) {
         <fieldset className={styles.field}>
           <legend>{t.opponents}</legend>
           <label className={styles.radio}>
-            <input type="radio" name="opponents" checked readOnly />
+            <input
+              type="radio"
+              name="opponents"
+              checked={setup.opponents === 'random'}
+              onChange={() => {
+                update({ opponents: 'random' });
+              }}
+            />
             {t.randomMix}
           </label>
           <span className={styles.hint}>{t.randomMixHint}</span>
+          <label className={styles.radio}>
+            <input
+              type="radio"
+              name="opponents"
+              checked={setup.opponents !== 'random'}
+              onChange={() => {
+                update({
+                  opponents: Array.from({ length: setup.players - 1 }, () => 'tag' as const),
+                });
+              }}
+            />
+            {t.chooseStyles}
+          </label>
+          {setup.opponents !== 'random' &&
+            (opponentStyles(setup) as readonly StyleId[]).map((style, i) => (
+              <label key={i} className={styles.styleRow}>
+                <span>{t.opponentLabel(i + 1)}</span>
+                <select
+                  className={styles.input}
+                  value={style}
+                  onChange={(e) => {
+                    const next = [...(opponentStyles(setup) as readonly StyleId[])];
+                    next[i] = e.target.value as StyleId;
+                    update({ opponents: next });
+                  }}
+                >
+                  {STYLE_IDS.map((id) => (
+                    <option key={id} value={id}>
+                      {strings.styles[id]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
         </fieldset>
 
         <div className={styles.buttons}>
@@ -167,7 +210,7 @@ export function SetupScreen({ initial, onStart, onBack }: Props) {
             className={styles.primary}
             disabled={check.errors.length > 0}
             onClick={() => {
-              onStart(setup);
+              onStart({ ...setup, opponents: opponentStyles(setup) });
             }}
           >
             {t.start}
