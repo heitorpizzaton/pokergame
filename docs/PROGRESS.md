@@ -34,18 +34,18 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 2 — Engine
 
-- [ ] `docs/RULES.md` written to match Section 5 (moved here from Phase 0 by the owner), including the position-label mapping for 2–9 players
-- [ ] Public `PlayerView` / `Action` contract in its own module outside `src/core/engine` (ADR-003)
-- [ ] Table state machine, `dispatch`, typed errors, events
-- [ ] Button, blinds, heads-up and the heads-up transition
-- [ ] Dealing order and burns
-- [ ] Betting: minimum raise, short all-in, reopening, BB option
-- [ ] Main and side pots, odd chips, uncalled bets
-- [ ] Showdown order and mucking
-- [ ] JSON serialization
-- [ ] Property tests (chip conservation, termination, legality) over 10,000+ games
-- [ ] Every mandatory scenario test from Section 13.1
-- [ ] **Accept:** property tests and all scenarios pass
+- [x] `docs/RULES.md` written to match Section 5, including the position-label mapping for 2–9 players
+- [x] Public `PlayerView` / `Action` contract in `src/core/view/`, outside `src/core/engine` (ADR-003, ADR-011)
+- [x] Table state machine: `dispatch`, typed errors, events (`src/core/engine`)
+- [x] Button, blinds, heads-up and the heads-up transition
+- [x] Dealing order and burns
+- [x] Betting: minimum raise, short all-in, reopening, BB option (ADR-012)
+- [x] Main and side pots, odd chips, uncalled bets
+- [x] Showdown order and mucking
+- [x] JSON serialization between hands (`snapshot` / `restore`), rabbit-hunt support, event redaction
+- [x] Property tests (chip conservation, termination, legality, button/blinds) over 10,000 random games
+- [x] Every mandatory scenario test from Section 13.1
+- [x] **Accept:** property tests and all scenarios pass
 
 ## Phase 3 — Equity
 

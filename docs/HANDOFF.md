@@ -4,6 +4,53 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 5) — Claude — Phase 2 engine
+
+**Branch:** `feat/phase-2-engine` (merged to `main` through its PR once CI is green). The owner asked for all remaining phases to be done in order, one PR each.
+
+### Session start note
+
+`npm run check` was green on `main`.
+
+### Done
+
+- `docs/RULES.md`: the rules exactly as implemented, including the position labels for 2–9 players.
+- `src/core/view/`: the public contract (`PlayerView`, `PlayerAction`, `LegalActions`, `ActionRecord`, …), which `src/ai` may import.
+- `src/core/engine/`:
+  - `PokerEngine` with `dispatch({startHand | act | reveal})` returning events, `legalActions`, `viewFor`, `snapshot`/`restore`, `rabbitHunt`, `redactEvent` and `timeoutAction`.
+  - Side pots and odd chips in `pots.ts`.
+  - Position labels in `positions.ts`.
+  - Decisions in ADR-011 and ADR-012.
+- Tests:
+  - 19 mandatory scenarios (§13.1) and 35 rule tests (positions and action order for 2–9 players, validation, information boundary, rabbit hunt, serialization, determinism).
+  - Direct pot and odd-chip tests.
+  - A property test over **10,000 random complete games** (about 5 s), checking chip conservation, valid stacks, termination, button/blind placement, the heads-up double-BB rule, and that illegal commands are rejected without changing state.
+  - Mutation checks: turning off the reopening rule or the heads-up transition rule makes tests fail.
+- `npm run check` is green locally: 198 unit/scenario/property/statistical tests and 15 e2e tests.
+
+### Exact next step
+
+Phase 3 on `feat/phase-3-equity`:
+
+1. Build the exact enumerator in `src/core/equity`, using `evaluateMasks` for inner loops.
+2. Build the Monte Carlo engine, which stops when its standard error drops below 0.25 pp and has a time cap.
+3. Add outs, draw probabilities and pot odds.
+4. Put both engines in `src/workers/equity.worker.ts`.
+5. Write the Section 7.2 reference tests first.
+
+### Known issues
+
+- None in the engine. Pre-action checkboxes and the time bank live in the UI (Phases 4 and 6), and must use `timeoutAction` and send `check` whenever checking is legal (ADR-012).
+
+### Verify
+
+```sh
+npm ci
+npm run check
+```
+
+---
+
 ## 2026-09-25 (session 1, part 4) — Claude — Phase 0 accepted
 
 **Branch:** `docs/phase-0-accepted`.
