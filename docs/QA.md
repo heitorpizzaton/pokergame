@@ -83,5 +83,8 @@ Chromium.
 ## Visual regression (Section 13.3)
 
 - [x] Baselines for the table at 2–9 players, portrait and landscape, generated in CI with the
-      official Playwright Chromium (`update-visual-baselines` label, ADR-023).
+      official Playwright Chromium (`update-visual-baselines` label, ADR-023). Regenerated after
+      the user's bet was moved clear of their cards. The agent reviewed portrait 2 and 6 and
+      landscape 3 and 9. Crowded but readable: in landscape with 9 players, one position label on
+      the left is partly behind a neighbour's cards.
 - [ ] **Owner:** review and approve the committed images in `tests/visual/__screenshots__`.
