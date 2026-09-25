@@ -18,7 +18,8 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ### Half-done
 
-- The table baselines change (the badge is new), so they are regenerated in the PR with the `update-visual-baselines` label.
+- The table baselines changed (the badge is new) and were regenerated in CI with the `update-visual-baselines` label (commit `9ec7fb2`). The owner still needs to review them.
+- Local `tests/perf` on this shared container: the desktop run occasionally measured a 65–125 ms task. Profiling the click shows 8–12 ms of script; the rest is the main thread being descheduled. CI (dedicated runner) decides.
 
 ### Exact next step
 
