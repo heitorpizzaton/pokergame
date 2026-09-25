@@ -26,7 +26,7 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 - **Context:** Section 13.3 lists iPhone SE (375×667), Pixel 7, iPad and desktop 1440×900. Section 2.8 requires every screen to work at 360×640. Playwright's `iPhone SE` descriptor is the first-generation 320×568 phone.
 - **Decision:** five Playwright projects, all on Chromium: `min-360x640` (Galaxy S5 descriptor), `iphone-se` (`iPhone SE (3rd gen)`, 375×667), `pixel-7`, `ipad` (`iPad (gen 7)`) and `desktop` (1440×900). The device descriptors supply viewport, touch and user agent; the engine is always Chromium.
 - **Alternatives considered:** running the iPhone and iPad projects on WebKit, deferred because it adds a second browser download to every CI run while there is no UI to test yet. Revisit in Phase 4 or 7, when real iOS-specific layout exists.
-- **Consequences:** when Playwright's own Chromium is missing, `playwright.config.ts` uses `PLAYWRIGHT_CHROMIUM_EXECUTABLE`, or the sandbox's preinstalled `/opt/pw-browsers/chromium`. CI always installs the matching browser.
+- **Consequences:** CI installs the official Playwright browser (`npx playwright install --with-deps chromium`) and never uses a fallback: `playwright.config.ts` ignores the fallback when `CI` is set, so a missing browser fails loudly. Locally only, when Playwright's own Chromium is missing, the config uses `PLAYWRIGHT_CHROMIUM_EXECUTABLE` or the sandbox's preinstalled `/opt/pw-browsers/chromium`. Only Chromium is installed because every project runs on Chromium; if WebKit projects are added, add `webkit` to the install step.
 
 ## ADR-003 — Architecture rules enforced by ESLint and guarded by a test
 

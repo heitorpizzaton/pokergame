@@ -3,10 +3,13 @@ import { chromium, defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 
-// Some sandboxes ship a preinstalled Chromium that does not match this Playwright release.
-// PLAYWRIGHT_CHROMIUM_EXECUTABLE points at it explicitly; otherwise the known sandbox path is
-// used only when Playwright's own browser is missing. CI installs the matching browser.
+// Local-only escape hatch: some sandboxes ship a preinstalled Chromium that does not match this
+// Playwright release. Outside CI, PLAYWRIGHT_CHROMIUM_EXECUTABLE points at it explicitly, or the
+// known sandbox path is used when Playwright's own browser is missing. In CI the fallback is
+// disabled: the workflow installs the official browser (`npx playwright install --with-deps
+// chromium`), and a missing browser must fail loudly instead of silently testing another build.
 function chromiumExecutable(): string | undefined {
+  if (process.env.CI) return undefined;
   const fromEnv = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
   if (fromEnv) return fromEnv;
   if (existsSync(chromium.executablePath())) return undefined;
