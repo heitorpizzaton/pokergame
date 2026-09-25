@@ -1,32 +1,65 @@
 /* Design tokens (AGENTS.md §11.1). Components read these; they never hardcode colors. */
 :root {
-  --color-felt-deep: #062a24;
-  --color-felt: #0b4f42;
-  --color-felt-light: #0f6b58;
+  /* Room and table */
+  --color-room: #06100e;
+  --color-room-light: #10231f;
+  --color-felt-deep: #04352c;
+  --color-felt: #0a5646;
+  --color-felt-light: #147d66;
+  --color-felt-line: rgb(243 217 139 / 22%);
+  --color-rail-dark: #22120a;
+  --color-rail: #4e2b15;
+  --color-rail-light: #7d4a26;
+  --texture-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Accents and text */
   --color-gold: #d9b865;
   --color-gold-light: #f3d98b;
+  --color-gold-deep: #9c7a33;
   --color-text: #f4f1e8;
-  --color-text-muted: rgb(244 241 232 / 72%);
-  --color-glass: rgb(255 255 255 / 8%);
-  --color-glass-strong: rgb(8 30 26 / 72%);
-  --color-glass-border: rgb(255 255 255 / 16%);
-  --color-panel: #0c2f29;
-  --color-rail: #3b2416;
-  --color-card-face: #fbfaf6;
-  --color-card-back-a: #7a1f2b;
-  --color-card-back-b: #3f0d16;
-  --color-suit-red: #c8202f;
-  --color-suit-black: #151515;
-  --color-suit-clubs: #127a3a;
-  --color-suit-diamonds: #1d5fd1;
-  --color-chip: #f0d27d;
+  --color-text-muted: rgb(244 241 232 / 74%);
+  --color-text-dim: rgb(244 241 232 / 58%);
+  --color-error: #ff9b8f;
+  --color-success: #8fe3b0;
+  --color-timer-warning: #ff6b57;
+
+  /* Glass panels (HUD, menus, action bar) */
+  --color-glass: rgb(255 255 255 / 7%);
+  --color-glass-hover: rgb(255 255 255 / 12%);
+  --color-glass-strong: rgb(6 22 19 / 74%);
+  --color-glass-border: rgb(255 255 255 / 14%);
+  --color-panel: #0b2722;
+  --blur-glass: blur(14px) saturate(140%);
+
+  /* Cards */
+  --color-card-face: #fbf9f3;
+  --color-card-face-shade: #ece7da;
+  --color-card-edge: rgb(0 0 0 / 18%);
+  --color-card-back-a: #7c1d2c;
+  --color-card-back-b: #3d0b15;
+  --color-card-back-line: rgb(243 217 139 / 38%);
+  --color-suit-red: #c6182c;
+  --color-suit-black: #16181c;
+  --color-suit-clubs: #0f7a3a;
+  --color-suit-diamonds: #1b5ed0;
+
+  /* Chips, by denomination relative to the blinds (AGENTS.md §11.1) */
+  --chip-sb: #e8e4d8;
+  --chip-bb: #c62d2d;
+  --chip-5bb: #1f8a4c;
+  --chip-25bb: #1c1f26;
+  --chip-100bb: #6b3fa0;
+  --chip-500bb: #d99b2b;
+  --chip-edge: rgb(255 255 255 / 88%);
+  --color-chip-label: #f7e7b4;
+
+  /* Actions */
   --color-action-fold: #8c2a2a;
   --color-action-call: #1f6f5a;
   --color-action-raise: #d9b865;
-  --color-error: #ff9b8f;
-  --color-timer-warning: #ff6b57;
 
-  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-ui:
+    Manrope, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -35,8 +68,21 @@
   --space-6: 24px;
   --space-8: 32px;
 
+  --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
+
+  --shadow-soft: 0 4px 14px rgb(0 0 0 / 35%);
+  --shadow-deep: 0 18px 50px rgb(0 0 0 / 60%);
+  --shadow-card: 0 1px 1px rgb(0 0 0 / 25%), 0 3px 8px rgb(0 0 0 / 35%);
+
+  /* Motion (scaled by --anim-scale: speed setting; 0 with reduced motion) */
+  --anim-scale: 1;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-deal: 300ms;
+  --duration-flip: 360ms;
+  --duration-chip: 420ms;
+  --duration-fade: 200ms;
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);

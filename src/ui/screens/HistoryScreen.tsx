@@ -13,7 +13,7 @@ import {
 import { formatChips, handName, strings } from '../../i18n/index.ts';
 import { PlayingCard } from '../table/PlayingCard.tsx';
 import { Seat } from '../table/Seat.tsx';
-import { seatPositions, visualSlot } from '../table/seat-layout.ts';
+import { seatPositions, tableCenter, visualSlot } from '../table/seat-layout.ts';
 import styles from './Screens.module.css';
 import tableStyles from './TableScreen.module.css';
 
@@ -211,6 +211,7 @@ function Replayer({
   if (!frame) return null;
   const n = record.finalStacks.length;
   const positions = seatPositions(n, 'portrait');
+  const center = tableCenter('portrait');
   const streets = (['preflop', 'flop', 'turn', 'river'] as const).filter(
     (s) => streetStart(frames, s) >= 0,
   );
@@ -265,7 +266,7 @@ function Replayer({
             />
           );
         })}
-        <div className={tableStyles.center}>
+        <div className={tableStyles.center} style={{ left: `${center.x}%`, top: `${center.y}%` }}>
           <div className={tableStyles.pots}>
             <span className={tableStyles.pot}>
               {strings.table.mainPot}: {formatChips(frame.pot)}

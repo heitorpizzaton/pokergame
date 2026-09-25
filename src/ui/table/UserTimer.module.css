@@ -19,6 +19,19 @@
   stroke: var(--color-gold);
   stroke-width: 3;
   stroke-linecap: round;
+  stroke-dashoffset: var(--to);
+  /* Timers keep real time: they are not scaled by the animation speed or reduced motion. */
+  animation: countdown var(--duration) linear both;
+}
+
+@keyframes countdown {
+  from {
+    stroke-dashoffset: var(--from);
+  }
+
+  to {
+    stroke-dashoffset: var(--to);
+  }
 }
 
 .warning .progress {
@@ -36,12 +49,34 @@
   overflow: hidden;
 }
 
-.bank span {
+.bankFill {
   display: block;
+  width: 0;
   height: 100%;
   background: var(--color-text-muted);
+  animation: bank var(--duration) linear var(--delay) both;
+}
+
+@keyframes bank {
+  from {
+    width: var(--bank-from);
+  }
+
+  to {
+    width: 0;
+  }
 }
 
 .bankActive span {
   background: var(--color-timer-warning);
+}
+
+/* Timers carry information: they keep real time even with reduced motion. */
+.ring .progress,
+.bank .bankFill {
+  animation-duration: var(--duration) !important;
+}
+
+.bank .bankFill {
+  animation-delay: var(--delay) !important;
 }

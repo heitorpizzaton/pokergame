@@ -4,6 +4,71 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-025 — Table effects, CSS animation and synthesized sound
+
+- **Date:** 2026-09-25
+- **Context:** Section 11.4 requires animations driven by engine events, in the exact dealing order, skippable and honouring speed and reduced motion. Section 11.5 requires original sound effects and optional haptics. Section 4.1 keeps poker logic out of React.
+- **Decision:**
+  - **Table effects:** `GameController` turns engine events into table effects (`deal`, `flip`, `bet`, `allIn`, `check`, `fold`, `collect`, `win`, `yourTurn`) through `subscribeEffects`.
+  - **Animation data in the snapshot:** `dealOrder` (seats in `HoleCardDealt` order), `collected` (the bets gathered at the last street end) and `result.bestFive`. The UI never works out poker state for itself.
+  - **Deal pacing:** the controller waits for the deal animation (70 ms per card plus the flight at normal speed) in a new `dealing` phase, which can be skipped.
+  - **CSS keyframes:** animations use CSS keyframes whose offsets are in container-query units (`cqw`/`cqh`) relative to the table area. Elements are keyed so each one animates once. A single `--anim-scale` variable applies the speed setting (1, 0.55 or 0) and reduced motion (0). Framer Motion is not added.
+  - **Sound:** `SoundEngine` synthesizes every cue with Web Audio: oscillators plus filtered noise from a fixed sequence, not the RNG. It unlocks on the first gesture and drops rapid repeats. Haptics use `navigator.vibrate` when available.
+- **Alternatives considered:**
+  - Framer Motion: tens of kilobytes gzipped for effects CSS handles.
+  - Deriving animations from snapshot diffs in React: fragile, and it puts table logic in components.
+  - Audio files: they would need licensing and precaching.
+- **Consequences:** a new animation needs an effect or snapshot field from the controller first. Timers are information, not decoration, so the turn timer is exempt from reduced motion.
+
+## ADR-024 — Visual design and render cost
+
+- **Date:** 2026-09-25
+- **Context:** Section 11.1 asks for a modern casino look with no external assets. Section 12 caps main-thread tasks at 50 ms and asks for 60 fps.
+- **Decision:**
+  - **Tokens:** everything lives as tokens in `src/ui/theme/tokens.css`.
+  - **Font:** Manrope (OFL) is self-hosted, Latin and Latin Extended subsets only (40 KB), and precached by the service worker.
+  - **Vector art:** card suits and header icons are original SVG paths, so rendering never depends on symbol or emoji fonts.
+  - **Felt and rail:** the felt texture is an inline SVG `feTurbulence` data URI. Depth on the felt comes from gradients: profiling showed large blurred `box-shadow`s being repainted on every change.
+  - **Turn timer:** a CSS animation computed once per turn instead of a per-frame React render.
+- **Alternatives considered:**
+  - Google Fonts: a runtime dependency that breaks offline play.
+  - Emoji and Unicode suits: they look different on every platform and break visual baselines.
+- **Consequences:** new decoration should avoid large blur radii on elements that change during play. The render check in `tests/perf` catches regressions.
+
+## ADR-023 — Visual baselines are generated and compared in CI
+
+- **Date:** 2026-09-25
+- **Context:** Section 13.3 requires screenshots of the table at each size in portrait and landscape. Pixels depend on the browser build. The agent's container ships Chromium 141, while Playwright 1.63 (CI) uses build 1243 (Chromium 153), and installing browsers in the container is not allowed.
+- **Decision:**
+  - `playwright.visual.config.ts` runs `tests/visual` against the seeded e2e build: 2–9 players, portrait 390×844 and landscape 844×390, no timer, no odds panel.
+  - Baselines live in `tests/visual/__screenshots__`.
+  - Adding the `update-visual-baselines` label to a PR runs `visual-baselines.yml`, which regenerates them with the official Chromium and commits them to the branch.
+  - The `Visual regression` CI job compares against committed baselines (1% pixel tolerance) and skips with a warning while none exist.
+  - Approval is the owner's review of the committed images.
+- **Alternatives considered:**
+  - Committing locally generated images: they would never match CI.
+  - A Docker image for local runs: not available in the agent sandbox.
+- **Consequences:**
+  - An intentional visual change needs the label again.
+  - Local `npm run visual` only works with the official browser installed.
+  - A push made by the workflow's token does not trigger CI, so push a follow-up commit afterwards.
+
+## ADR-022 — Seeded end-to-end debug build
+
+- **Date:** 2026-09-25
+- **Context:** Section 13.3 asks for a winning flow "using a seeded debug build", and visual baselines need identical deals. Section 4.1 requires the seeded RNG to be unreachable from production, "tree-shaken or guarded by a build flag".
+- **Decision:**
+  - `vite build --mode e2e` loads `.env.e2e` (`VITE_SEEDED_DEBUG=1`).
+  - In that build only, `?seed=N` makes `loadRngFactory` import `src/app/debug/seeded-factory.ts`, the single file exempted from the lint ban.
+  - The factory seeds the deck, the NPC stream and each brain, keeps brains in-process, and freezes their time-budget clock so decisions never depend on machine speed.
+  - Vite replaces the env check with a constant, so production builds contain neither the branch nor the module.
+  - `npm run budget` fails if the marker `mesa-viva-seeded-debug` appears in `dist/`. It runs in CI and before every Pages deploy.
+  - `npm run e2e` always tests the e2e build. Without `?seed` it behaves exactly like production.
+- **Alternatives considered:**
+  - A runtime flag in production: the seeded RNG would ship.
+  - Injecting the RNG from Playwright: needs a production hook.
+- **Consequences:** the e2e build is not the deployed build. Production-only checks (the budget, the Pages smoke job) use `npm run build`.
+
 ## ADR-021 — End-to-end speed and timer overrides in the URL
 
 - **Date:** 2026-09-25

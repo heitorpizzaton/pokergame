@@ -160,6 +160,12 @@ export default defineConfig(
     rules: srcImportRestrictions,
   },
   {
+    // ADR-022: the end-to-end debug build's seeded factory, the single exemption. Production
+    // bundles never load it, and scripts/check-bundle.ts verifies that.
+    files: ['src/app/debug/seeded-factory.ts'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  {
     files: ['src/ui/**/*.tsx', 'src/app/**/*.tsx'],
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     rules: jsxLiteralBan,

@@ -20,7 +20,29 @@ export type Speed = 'normal' | 'fast' | 'instant';
 export type PreAction = 'checkFold' | 'callAny' | 'check';
 
 export type TablePhase =
-  'npcTurn' | 'userTurn' | 'runout' | 'handResult' | 'userOut' | 'watching' | 'gameOver';
+  | 'dealing'
+  | 'npcTurn'
+  | 'userTurn'
+  | 'runout'
+  | 'handResult'
+  | 'userOut'
+  | 'watching'
+  | 'gameOver';
+
+/**
+ * Moments the UI turns into sound, haptics and animation cues (AGENTS.md §11.4–11.5). They come
+ * from engine events, so the UI never infers poker state itself.
+ */
+export type TableEffect =
+  | { readonly kind: 'deal'; readonly cards: number }
+  | { readonly kind: 'flip'; readonly cards: number }
+  | { readonly kind: 'bet'; readonly seat: number }
+  | { readonly kind: 'allIn'; readonly seat: number }
+  | { readonly kind: 'check'; readonly seat: number }
+  | { readonly kind: 'fold'; readonly seat: number }
+  | { readonly kind: 'collect' }
+  | { readonly kind: 'win'; readonly seats: readonly number[]; readonly user: boolean }
+  | { readonly kind: 'yourTurn' };
 
 export interface Scheduler {
   setTimeout(fn: () => void, ms: number): unknown;
@@ -43,6 +65,8 @@ export interface HandResult {
     readonly hand: HandValue | null;
   }[];
   readonly showdown: boolean;
+  /** The five cards of the main pot's winning hand (highlighted), or null without showdown. */
+  readonly bestFive: readonly Card[] | null;
 }
 
 /** The user's clock for the current turn (AGENTS.md §9). Times use the scheduler's clock. */
@@ -81,6 +105,15 @@ export interface TableSnapshot {
   readonly rabbit: 'available' | readonly Card[] | null;
   /** NPC styles by seat (null for the user). */
   readonly styles: readonly (StyleId | null)[];
+  /** Seats in the order hole cards were dealt this hand, one entry per card (§5.3). */
+  readonly dealOrder: readonly number[];
+  /** Bets gathered into the pot at the last street end (animated once per `id`). */
+  readonly collected: CollectedBets | null;
+}
+
+export interface CollectedBets {
+  readonly id: number;
+  readonly bets: readonly { readonly seat: number; readonly amount: number }[];
 }
 
 /** Everything needed to resume a game at a hand boundary (never a deck in progress). */
@@ -147,6 +180,9 @@ const THINKING_MS: Record<Speed, readonly [number, number]> = {
 const RUNOUT_STREET_MS: Record<Speed, number> = { normal: 1100, fast: 500, instant: 0 };
 const RESULT_MS: Record<Speed, number> = { normal: 2600, fast: 1400, instant: 0 };
 const AWAY_ACTION_MS: Record<Speed, number> = { normal: 500, fast: 250, instant: 0 };
+/** Time for the deal animation: per hole card, plus the last card's flight (AGENTS.md §11.4). */
+const DEAL_CARD_MS: Record<Speed, number> = { normal: 70, fast: 35, instant: 0 };
+const DEAL_FLIGHT_MS: Record<Speed, number> = { normal: 300, fast: 180, instant: 0 };
 /** AGENTS.md §8.4: NPC thinking time is never above 1.5 s. */
 const MAX_THINKING_MS = 1500;
 /** AGENTS.md §9: +5 s every 10 hands, up to 60 s. */
@@ -169,6 +205,7 @@ export class GameController {
   readonly #userSeat: number;
   readonly #stats: SessionStatsTracker;
   readonly #listeners = new Set<() => void>();
+  readonly #effectListeners = new Set<(effect: TableEffect) => void>();
   readonly #options: ControllerOptions;
   readonly #startedAt: number;
   #decisionToken = 0;
@@ -194,6 +231,10 @@ export class GameController {
   #rabbit: 'available' | readonly Card[] | null = null;
   #handLog: { at: number; event: EngineEvent }[] = [];
   #handStartedAt = 0;
+  #dealOrder: number[] = [];
+  #collected: CollectedBets | null = null;
+  #collectId = 0;
+  #announcedTurn: string | null = null;
   #gameOverNotified = false;
   #snapshot: TableSnapshot;
   #version = 0;
@@ -231,6 +272,12 @@ export class GameController {
   };
 
   readonly getSnapshot = (): TableSnapshot => this.#snapshot;
+
+  /** Sound, haptics and animation cues, in the order they happen. */
+  readonly subscribeEffects = (listener: (effect: TableEffect) => void): (() => void) => {
+    this.#effectListeners.add(listener);
+    return () => this.#effectListeners.delete(listener);
+  };
 
   // ---- Commands -----------------------------------------------------------------------
 
@@ -318,8 +365,13 @@ export class GameController {
     this.#showResult();
   }
 
-  /** Skips the wait after a hand or during a runout ("toque para continuar"). */
+  /** Skips the deal animation, a runout or the wait after a hand ("toque para continuar"). */
   skipWait(): void {
+    if (this.#phase === 'dealing') {
+      this.#clearTimer();
+      this.#continue();
+      return;
+    }
     if (this.#phase !== 'handResult' && this.#phase !== 'runout') return;
     this.#clearTimer();
     if (this.#phase === 'runout') {
@@ -367,6 +419,7 @@ export class GameController {
     this.suspend();
     this.#driver.dispose();
     this.#listeners.clear();
+    this.#effectListeners.clear();
   }
 
   // ---- Flow ---------------------------------------------------------------------------
@@ -383,6 +436,8 @@ export class GameController {
     this.#rabbit = null;
     this.#boardShown = 0;
     this.#handLog = [];
+    this.#dealOrder = [];
+    this.#collected = null;
     this.#handStartedAt = this.#scheduler.now();
     this.#absorb(this.#engine.dispatch({ type: 'startHand' }), 0, null);
     const hand = this.#engine.state.hand;
@@ -392,7 +447,18 @@ export class GameController {
         this.#timeBankMs = Math.min(BANK_MAX_MS, this.#timeBankMs + BANK_REFILL_MS);
       }
     }
-    this.#continue();
+    // Let the deal animation finish before anyone acts.
+    const dealMs = DEAL_CARD_MS[this.#speed] * this.#dealOrder.length + DEAL_FLIGHT_MS[this.#speed];
+    if (dealMs === 0 || this.#engine.state.hand?.phase === 'complete') {
+      this.#continue();
+      return;
+    }
+    this.#phase = 'dealing';
+    this.#publish();
+    this.#timer = this.#scheduler.setTimeout(() => {
+      this.#timer = null;
+      this.#continue();
+    }, dealMs);
   }
 
   /** Decides what happens next from the engine state. */
@@ -409,7 +475,9 @@ export class GameController {
       const revealed = this.#boardShown < hand.board.length;
       if (revealed && this.#phase === 'runout') {
         this.#timer = this.#scheduler.setTimeout(() => {
+          const before = this.#boardShown;
           this.#boardShown = Math.min(hand.board.length, this.#nextBoardStep());
+          this.#emit({ kind: 'flip', cards: this.#boardShown - before });
           if (this.#boardShown < hand.board.length) this.#continue();
           else this.#showResult();
         }, RUNOUT_STREET_MS[this.#speed]);
@@ -431,6 +499,11 @@ export class GameController {
         this.#dispatchAct(seat, pre);
         this.#continue();
         return;
+      }
+      const turn = `${hand.number}:${hand.actions.length}`;
+      if (this.#announcedTurn !== turn && !this.#away) {
+        this.#announcedTurn = turn;
+        this.#emit({ kind: 'yourTurn' });
       }
       this.#startUserTurn();
       return;
@@ -586,9 +659,26 @@ export class GameController {
   }
 
   #dispatchAct(seat: number, action: PlayerAction): void {
-    const boardBefore = this.#engine.state.hand?.board.length ?? 0;
-    const streetBefore = this.#engine.state.hand?.street ?? null;
-    this.#absorb(this.#engine.dispatch({ type: 'act', seat, action }), boardBefore, streetBefore);
+    const before = this.#engine.state.hand;
+    const boardBefore = before?.board.length ?? 0;
+    const streetBefore = before?.street ?? null;
+    const committed = new Map<number, number>();
+    for (const p of before?.players ?? []) if (p) committed.set(p.seat, p.committed);
+    const events = this.#engine.dispatch({ type: 'act', seat, action });
+    for (const e of events) {
+      // `to` is the actor's street total after the action.
+      if (e.type === 'ActionTaken' && e.action.kind !== 'fold' && e.action.kind !== 'check') {
+        committed.set(e.action.seat, e.action.to);
+      }
+    }
+    this.#absorb(events, boardBefore, streetBefore);
+    const after = this.#engine.state.hand;
+    if (after && (after.street !== streetBefore || after.phase === 'complete')) {
+      const bets = [...committed].flatMap(([s, amount]) =>
+        amount > 0 ? [{ seat: s, amount }] : [],
+      );
+      if (bets.length > 0) this.#collected = { id: ++this.#collectId, bets };
+    }
   }
 
   /** Common bookkeeping after any engine command: stats, action chips, runout, result. */
@@ -641,13 +731,49 @@ export class GameController {
   #record(events: readonly EngineEvent[]): void {
     const redacted = events.map((e) => redactEvent(e, this.#userSeat));
     const now = this.#scheduler.now();
+    let dealt = 0;
     for (const e of redacted) {
       this.#handLog.push({ at: now, event: e });
       if (e.type === 'ActionTaken') this.#lastActions[e.action.seat] = e.action;
       if (e.type === 'StreetDealt') this.#lastActions = {};
+      if (e.type === 'HoleCardDealt') {
+        this.#dealOrder.push(e.seat);
+        dealt++;
+      }
+      this.#effectFor(e);
     }
+    if (dealt > 0) this.#emit({ kind: 'deal', cards: dealt });
     const view = this.#engine.viewFor(this.#userSeat);
     this.#stats.record(redacted, view.holeCards, view.board);
+  }
+
+  #effectFor(e: EngineEvent): void {
+    switch (e.type) {
+      case 'ActionTaken': {
+        const { seat, kind, allIn } = e.action;
+        if (kind === 'fold' || kind === 'check') this.#emit({ kind, seat });
+        else this.#emit({ kind: allIn ? 'allIn' : 'bet', seat });
+        break;
+      }
+      case 'StreetDealt':
+        // During an all-in runout the board is revealed later, one street at a time.
+        if (this.#phase !== 'runout') this.#emit({ kind: 'flip', cards: e.cards.length });
+        break;
+      case 'PotsUpdated':
+        this.#emit({ kind: 'collect' });
+        break;
+      case 'PotAwarded': {
+        const seats = e.winners.map((w) => w.seat);
+        this.#emit({ kind: 'win', seats, user: seats.includes(this.#userSeat) });
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  #emit(effect: TableEffect): void {
+    for (const listener of this.#effectListeners) listener(effect);
   }
 
   #consumePreAction(): PlayerAction | null {
@@ -724,6 +850,8 @@ export class GameController {
       away: this.#away,
       rabbit: this.#rabbit,
       styles: this.#styles,
+      dealOrder: [...this.#dealOrder],
+      collected: this.#collected,
     };
   }
 
@@ -737,9 +865,11 @@ export class GameController {
 function resultFrom(events: readonly EngineEvent[]): HandResult {
   const totals = new Map<number, { amount: number; hand: HandValue | null }>();
   let showdown = false;
+  let bestFive: readonly Card[] | null = null;
   for (const e of events) {
     if (e.type === 'Showdown') showdown = true;
     if (e.type !== 'PotAwarded') continue;
+    if (e.potIndex === 0) bestFive = e.bestFive;
     for (const w of e.winners) {
       const current = totals.get(w.seat) ?? { amount: 0, hand: null };
       totals.set(w.seat, { amount: current.amount + w.amount, hand: current.hand ?? e.value });
@@ -748,5 +878,6 @@ function resultFrom(events: readonly EngineEvent[]): HandResult {
   return {
     winners: [...totals.entries()].map(([seat, t]) => ({ seat, amount: t.amount, hand: t.hand })),
     showdown,
+    bestFive,
   };
 }

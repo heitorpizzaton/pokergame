@@ -8,7 +8,7 @@ const PORT = 4173;
 // known sandbox path is used when Playwright's own browser is missing. In CI the fallback is
 // disabled: the workflow installs the official browser (`npx playwright install --with-deps
 // chromium`), and a missing browser must fail loudly instead of silently testing another build.
-function chromiumExecutable(): string | undefined {
+export function chromiumExecutable(): string | undefined {
   if (process.env.CI) return undefined;
   const fromEnv = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
   if (fromEnv) return fromEnv;
@@ -21,7 +21,7 @@ const executablePath = chromiumExecutable();
 
 // Every project runs on Chromium; the device descriptors only supply viewport, touch and
 // user-agent settings. See docs/DECISIONS.md (ADR-004).
-const chromiumOnly = {
+export const chromiumOnly = {
   browserName: 'chromium' as const,
   ...(executablePath ? { launchOptions: { executablePath } } : {}),
 };

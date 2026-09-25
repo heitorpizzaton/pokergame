@@ -1,4 +1,7 @@
+import type { CSSProperties } from 'react';
+import { parseCards } from '../../core/cards/index.ts';
 import { strings } from '../../i18n/index.ts';
+import { PlayingCard } from '../table/PlayingCard.tsx';
 import styles from './Screens.module.css';
 
 interface Props {
@@ -6,13 +9,27 @@ interface Props {
   readonly onContinue: (() => void) | null;
   readonly onHistory: (() => void) | null;
   readonly onSettings: () => void;
+  readonly onGuide: () => void;
 }
 
-export function MenuScreen({ onNewGame, onContinue, onHistory, onSettings }: Props) {
+/** A royal flush fanned above the title. */
+const FAN = parseCards('TsJsQsKsAs');
+const LIFT = [10, 3, 0, 3, 10];
+
+export function MenuScreen({ onNewGame, onContinue, onHistory, onSettings, onGuide }: Props) {
   return (
     <main className={styles.screen} data-testid="menu-screen">
       <section className={styles.panel} aria-labelledby="app-title">
-        <img className={styles.logo} src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" />
+        <div className={styles.fan} aria-hidden="true">
+          {FAN.map((card, i) => (
+            <PlayingCard
+              key={card}
+              card={card}
+              size="large"
+              motion={{ '--i': i, '--lift': LIFT[i] ?? 0 } as CSSProperties}
+            />
+          ))}
+        </div>
         <h1 id="app-title" className={styles.title}>
           {strings.app.name}
         </h1>
@@ -37,6 +54,9 @@ export function MenuScreen({ onNewGame, onContinue, onHistory, onSettings }: Pro
           )}
           <button type="button" className={styles.secondary} onClick={onSettings}>
             {strings.menu.settings}
+          </button>
+          <button type="button" className={styles.secondary} onClick={onGuide}>
+            {strings.menu.guide}
           </button>
         </div>
         <p className={styles.legal}>{strings.legal.entertainment}</p>

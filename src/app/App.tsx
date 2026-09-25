@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { randomStyles, type StyleId } from '../ai/index.ts';
 import { CryptoRng } from '../core/rng/index.ts';
 import {
@@ -8,7 +8,6 @@ import {
   MemoryHistoryStore,
 } from '../history/index.ts';
 import { strings } from '../i18n/index.ts';
-import { HistoryScreen } from '../ui/screens/HistoryScreen.tsx';
 import { MenuScreen } from '../ui/screens/MenuScreen.tsx';
 import { SettingsScreen } from '../ui/screens/SettingsScreen.tsx';
 import { SetupScreen } from '../ui/screens/SetupScreen.tsx';
@@ -25,14 +24,24 @@ import {
 } from './game-controller.ts';
 import { pickNames } from './names.ts';
 import { LocalNpcDriver, type NpcDriver, type NpcSeat } from './npc-driver.ts';
+import type { RngFactory } from './rng-factory.ts';
 import { type Settings, SettingsStore } from './settings.ts';
 import { type GameSetup, loadLastSetup, saveLastSetup, toEngineConfig } from './setup.ts';
+
+// AGENTS.md §12: history and the replayer are not part of the initial bundle.
+const HistoryScreen = lazy(() =>
+  import('../ui/screens/HistoryScreen.tsx').then((m) => ({ default: m.HistoryScreen })),
+);
+const GuideScreen = lazy(() =>
+  import('../ui/screens/GuideScreen.tsx').then((m) => ({ default: m.GuideScreen })),
+);
 
 type Screen =
   | { readonly name: 'menu' }
   | { readonly name: 'setup' }
   | { readonly name: 'settings' }
   | { readonly name: 'history' }
+  | { readonly name: 'guide' }
   | { readonly name: 'table'; readonly controller: GameController; readonly setup: GameSetup };
 
 function storage(): Storage | null {
@@ -63,9 +72,9 @@ function timerFor(settings: Settings): TimerSettings {
 }
 
 /** NPC brains in a module worker when available, otherwise in-process. */
-function createDriver(seats: readonly NpcSeat[]): NpcDriver {
+function createDriver(seats: readonly NpcSeat[], rngs: RngFactory): NpcDriver {
   try {
-    if (typeof Worker !== 'undefined') {
+    if (rngs.workers && typeof Worker !== 'undefined') {
       const worker = new Worker(new URL('../workers/ai.worker.ts', import.meta.url), {
         type: 'module',
       });
@@ -74,7 +83,11 @@ function createDriver(seats: readonly NpcSeat[]): NpcDriver {
   } catch {
     // Fall through to in-process brains.
   }
-  return new LocalNpcDriver(seats, () => new CryptoRng());
+  return new LocalNpcDriver(
+    seats,
+    (seat) => rngs.brain(seat),
+    rngs.brainClock ? { now: rngs.brainClock } : {},
+  );
 }
 
 function createEquityClient(): EquityClient {
@@ -120,7 +133,7 @@ function setupFromSave(save: SavedGame): GameSetup {
   };
 }
 
-export function App() {
+export function App({ rngs }: { readonly rngs: RngFactory }) {
   const settingsStore = useMemo(() => new SettingsStore(storage()), []);
   const settings = useSyncExternalStore(settingsStore.subscribe, settingsStore.get);
   const history = useMemo(() => createHistoryStore(), []);
@@ -130,7 +143,8 @@ export function App() {
   const [autosave, setAutosave] = useState(() => loadAutosave(storage()));
 
   const buildController = (setup: GameSetup, restore?: SavedGame): GameController => {
-    const npcRng = new CryptoRng();
+    const deckRng = rngs.deck();
+    const npcRng = rngs.npc();
     const styles: (StyleId | null)[] = restore
       ? [...restore.styles]
       : [
@@ -146,10 +160,10 @@ export function App() {
     const current = settingsStore.get();
     return new GameController({
       config: toEngineConfig(setup, names.slice(1), names[0] ?? strings.table.you),
-      deckRng: new CryptoRng(),
+      deckRng,
       npcRng,
       speed: speedFor(current),
-      driver: createDriver(seats),
+      driver: createDriver(seats, rngs),
       styles,
       timer: timerFor(current),
       rabbitHunt: current.rabbitHunt,
@@ -222,6 +236,9 @@ export function App() {
           onSettings={() => {
             setScreen({ name: 'settings' });
           }}
+          onGuide={() => {
+            setScreen({ name: 'guide' });
+          }}
         />
       );
     case 'setup':
@@ -237,7 +254,17 @@ export function App() {
     case 'settings':
       return <SettingsScreen store={settingsStore} onBack={toMenu} />;
     case 'history':
-      return <HistoryScreen store={history} onBack={toMenu} />;
+      return (
+        <Suspense fallback={null}>
+          <HistoryScreen store={history} onBack={toMenu} />
+        </Suspense>
+      );
+    case 'guide':
+      return (
+        <Suspense fallback={null}>
+          <GuideScreen onBack={toMenu} fourColor={settings.fourColorDeck} />
+        </Suspense>
+      );
     case 'table':
       return (
         <TableScreen
