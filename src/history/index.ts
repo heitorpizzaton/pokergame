@@ -8,3 +8,4 @@ export {
   streetStart,
 } from './replay.ts';
 export { type HistoryStore, IndexedDbHistoryStore, MemoryHistoryStore } from './store.ts';
+export { checkFairness, type FairnessCheck } from './fairness.ts';

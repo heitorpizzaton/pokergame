@@ -350,6 +350,19 @@
   color: var(--color-text-muted);
 }
 
+.commitment {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.62rem;
+  color: var(--color-text-dim);
+}
+
 .away {
   position: absolute;
   top: 0;

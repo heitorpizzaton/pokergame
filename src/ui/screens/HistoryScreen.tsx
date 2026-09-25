@@ -14,6 +14,7 @@ import { formatChips, handName, strings } from '../../i18n/index.ts';
 import { PlayingCard } from '../table/PlayingCard.tsx';
 import { Seat } from '../table/Seat.tsx';
 import { seatPositions, tableCenter, visualSlot } from '../table/seat-layout.ts';
+import { FairnessPanel } from './FairnessPanel.tsx';
 import styles from './Screens.module.css';
 import tableStyles from './TableScreen.module.css';
 
@@ -194,6 +195,7 @@ function Replayer({
   const frames = useMemo(() => replayFrames(record), [record]);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [proofOpen, setProofOpen] = useState(false);
   const frame = frames[index] ?? frames[0];
 
   useEffect(() => {
@@ -318,6 +320,18 @@ function Replayer({
           </button>
         </div>
         <div className={styles.row} style={{ padding: '0 8px 8px' }}>
+          <button
+            type="button"
+            className={styles.secondary}
+            data-testid="fairness-open"
+            onClick={() => {
+              setProofOpen(true);
+            }}
+          >
+            {strings.fairness.title}
+          </button>
+        </div>
+        <div className={styles.row} style={{ padding: '0 8px 8px' }}>
           {streets.map((s) => (
             <button
               key={s}
@@ -332,6 +346,14 @@ function Replayer({
           ))}
         </div>
       </footer>
+      {proofOpen && (
+        <FairnessPanel
+          record={record}
+          onClose={() => {
+            setProofOpen(false);
+          }}
+        />
+      )}
     </main>
   );
 }

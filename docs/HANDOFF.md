@@ -4,6 +4,39 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 11) — Claude — Phase 8 fairness proof (optional)
+
+**Branch:** `feat/phase-8-fairness`.
+
+### Done
+
+- `src/core/fairness`: synchronous SHA-256, `commitDeck`, `verifyCommitment`, `newSalt`, `boardDeckPositions` (ADR-026).
+- Controller: a commitment for every hand before it is shown (`snapshot.commitment`), and the reveal in `CompletedHand.fairness` after the hand. The salt comes from its own RNG stream; the seeded build has one too, so seeded games and the visual baselines stay reproducible.
+- History: `fairness` in each record and `checkFairness`. The replayer has a "Prova de justiça" panel with the hash, salt, deck, the verifiable text and "Verificar".
+- Table: a commitment badge (lock icon and 8 hex digits) in the bottom-left corner of the table.
+- Tests: `tests/unit/fairness.test.ts` (NIST vectors, WebCrypto agreement, tamper detection, 30+ controller hands verified through the history including showdowns) and `tests/e2e/fairness.spec.ts` (the badge's hash equals the recorded one and verifies).
+
+### Half-done
+
+- The table baselines changed (the badge is new) and were regenerated in CI with the `update-visual-baselines` label (commit `9ec7fb2`). The owner still needs to review them.
+- Local `tests/perf` on this shared container: the desktop run occasionally measured a 65–125 ms task. Profiling the click shows 8–12 ms of script; the rest is the main thread being descheduled. CI (dedicated runner) decides.
+
+### Exact next step
+
+- The owner reviews the regenerated baselines and the owner-only items in `docs/QA.md`. Every phase in `AGENTS.md` Section 14 is now implemented.
+
+### Known issues
+
+- None found.
+
+### Verify
+
+```bash
+npm run check
+```
+
+---
+
 ## 2026-09-25 (session 1, part 10) — Claude — Phase 7 polish
 
 **Branch:** `feat/phase-7-polish` ([PR #12](https://github.com/heitorpizzaton/pokergame/pull/12)).

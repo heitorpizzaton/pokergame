@@ -101,4 +101,6 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 8 (optional) — Fairness proof
 
-- [ ] SHA-256 deck commitment with salt, reveal in history, "Verificar" button
+- [x] SHA-256 deck commitment with salt, published before each hand (badge on the table; the full hash is in its label, its tooltip and the history) (ADR-026)
+- [x] Reveal of the deck and salt in the history, with a "Prova de justiça" panel and a "Verificar" button that recomputes the hash and checks every seen card against its deal position
+- [x] Tests: NIST vectors, WebCrypto agreement, tamper detection, controller and history integration, e2e flow

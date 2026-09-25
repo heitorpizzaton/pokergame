@@ -1,4 +1,4 @@
-import type { CompletedHand } from '../app/game-controller.ts';
+import type { CompletedHand, FairnessProof } from '../app/game-controller.ts';
 import type { Card } from '../core/cards/index.ts';
 import { positionLabelsFromButton } from '../core/engine/index.ts';
 import type { HandValue } from '../core/eval/index.ts';
@@ -56,6 +56,8 @@ export interface HandRecord {
   /** The user's net result for the hand, in chips. */
   readonly userNet: number;
   readonly potTotal: number;
+  /** Deck commitment and reveal (records saved before Phase 8 have none). */
+  readonly fairness?: FairnessProof;
 }
 
 export function buildHandRecord(hand: CompletedHand, sessionId: string): HandRecord {
@@ -153,5 +155,6 @@ export function buildHandRecord(hand: CompletedHand, sessionId: string): HandRec
     finalStacks,
     userNet: (finalStacks[hand.userSeat] ?? 0) - (startStacks[hand.userSeat] ?? 0),
     potTotal: awards.reduce((sum, a) => sum + a.amount, 0),
+    ...(hand.fairness ? { fairness: hand.fairness } : {}),
   };
 }
