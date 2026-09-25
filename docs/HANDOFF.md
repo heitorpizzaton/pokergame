@@ -4,6 +4,53 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 9) — Claude — Phase 6 features
+
+**Branch:** `feat/phase-6-features`.
+
+### Done
+
+- Settings (`src/app/settings.ts`, `SettingsScreen`): every Section 11 item, validated `localStorage`, "Restaurar padrões" (ADR-018).
+- Odds panel (`OddsPanel`): equity from the worker (request-keyed, cached), outs and draw odds, pot odds with a call assessment, preflop class. Collapsible, with a `%` header toggle and a mute toggle.
+- Time bank (`UserTimer`, controller clock): ring, bank bar, color change and haptic pulse in the last 5 s, +5 s every 10 hands up to 60 s, "Ausente" with "Voltar" (ADR-018).
+- Rabbit hunt: button after a hand ends early, dimmed cards and label.
+- Hand history (`src/history/`): public-only records, IndexedDB store (off by default), replayer with step and street jumps, PokerStars-style export (ADR-019).
+- Autosave and "Continuar partida" at hand boundaries (ADR-020). Quitting from the pause menu keeps the save.
+- Four-color deck, stacks in BB, NPC style badges, all-in confirmation, auto-muck (`engine.setAutoMuck`).
+- URL overrides `?speed=` and `?timerMs=&bankMs=` for e2e (ADR-021).
+- Tests: `tests/unit/features.test.ts` (settings, time bank, rabbit hunt, autosave, history records without hidden cards, store, export, replay) and `tests/e2e/features.spec.ts` (odds toggle, timer expiry and "Voltar", rabbit hunt, history with replayer and export, history off records nothing, autosave and resume, settings persistence with the all-in confirmation). Passed 70/70 over two full runs on all five viewports.
+
+### Half-done
+
+- Nothing in Phase 6. Sound and reduced-motion settings are stored but have no effect until Phase 7 adds sound and animation.
+
+### Exact next step
+
+Phase 7 on `feat/phase-7-polish`:
+
+1. Design tokens and full visuals.
+2. Event-driven animations in dealing order, honoring reduced motion.
+3. Synthesized sound (Web Audio) and haptics.
+4. "Como jogar" guide.
+5. Accessibility: ARIA live "Sua vez", focus and contrast.
+6. PWA and performance budgets (Section 12).
+7. Visual regression baselines.
+8. `docs/QA.md`.
+
+### Known issues
+
+- A resumed game starts NPC opponent models from scratch. This is acceptable because models rebuild within a few dozen hands.
+- Starting "Nova partida" keeps the old autosave until the new game's first hand ends.
+
+### Verify
+
+```bash
+npm run check
+npx playwright test tests/e2e/features.spec.ts --repeat-each=2
+```
+
+---
+
 ## 2026-09-25 (session 1, part 8) — Claude — Phase 5 AI
 
 **Branch:** `feat/phase-5-ai`.
