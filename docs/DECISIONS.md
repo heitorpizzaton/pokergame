@@ -4,6 +4,37 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-012 — Rule interpretations fixed by the engine
+
+- **Date:** 2026-09-25
+- **Context:** Section 5 leaves some details open, and a few standard poker rules conflict with the product rules.
+- **Decision (all documented in `docs/RULES.md` and covered by tests):**
+  - **Folding when checking is free** is rejected by the engine (`FoldWhenCheckAvailable`), not just hidden by the UI. This enforces the NPC sanity rule (Section 8.2.9) by construction.
+  - **Short big blind:** the amount to call stays the **full** big blind for players who can still act. When only all-in opponents remain, a player only needs to match their largest commitment, and the rest is returned as uncalled.
+  - **Raises need a responder:** raising (or betting) is not offered when every other live player is all-in.
+  - **Reopening:** a player who has already acted may raise again only if the current bet has grown by at least `minRaise` since they last acted. This gives the TDA behaviour for single short all-ins (no reopen) and for cumulative short all-ins (reopen).
+  - **Muck policy:** a player shows at showdown if their hand can win or tie a pot they are eligible for (compared with hands already shown), if it was already revealed in an all-in runout, or if their `autoMuck` flag is off. Otherwise they muck.
+  - **Position labels:** the first player to act preflop in a 4+ player game is always UTG, and late positions are CO, HJ, LJ counting back from the button (`docs/RULES.md` §3).
+  - **Places:** players who bust in the same hand are ranked by their stack at the start of that hand; equal stacks share the better place.
+- **Alternatives considered:** allowing a fold when checking is free and filtering it in the UI and AI, rejected because every consumer would then have to remember it; charging only the posted short big blind, rejected in favour of the common tournament rule.
+- **Consequences:** the AI never needs its own "don't fold when checking is free" guard, since the engine rejects the action. The UI's pre-action "Passar/Desistir" box must send `check` whenever checking is legal.
+
+## ADR-011 — Engine API: command dispatch, events, and a public view contract
+
+- **Date:** 2026-09-25
+- **Context:** Section 4.1 asks for a deterministic, framework-agnostic state machine driven by `dispatch`, emitting events, serializable, and with an RNG injected. Section 8.1 requires the AI to see only a `PlayerView`.
+- **Decision:**
+  - **Commands:** `PokerEngine.dispatch(command)` takes `startHand`, `act` or `reveal` and returns the list of events it produced. A rejected command throws a typed `EngineError` and leaves the state unchanged (property-tested).
+  - **Automatic flow:** the engine advances streets, runouts, showdowns, eliminations and game end on its own, so the UI only replays events with its own timing.
+  - **Public contract:** `PlayerView`, `PlayerAction`, `LegalActions` and related types live in `src/core/view/`, **outside** `src/core/engine`, so `src/ai` can import them (ADR-003). `engine.viewFor(seat)` builds the view. Hole cards in `HoleCardDealt` events are hidden by `redactEvent(event, viewerSeat)`.
+  - **Save/restore:** `snapshot()` works only between hands, drops the completed hand (and its deck), and is JSON-safe. `PokerEngine.restore(snapshot, rng)` validates the chip total.
+  - **Rabbit hunt:** `rabbitHunt()` reads the remaining deck of the completed hand with burns respected. It returns `null` after a showdown or while a hand is running.
+  - **Testing:** tests rig decks with `ScriptedRng` plus `shuffleScript` (`tests/support/engine-harness.ts`), which inverts the Fisher-Yates shuffle.
+- **Alternatives considered:** a pure reducer `(state, action) => [state, events]`, rejected because the private deck and injected RNG fit a class with private fields better, while commands and events remain plain data; letting the UI read the raw state, rejected because it would leak hidden cards.
+- **Consequences:** Phase 4 drives the table with `dispatch`, renders from `viewFor(userSeat)` and animates from redacted events. Phase 5 builds the AI on `PlayerView` only.
+
+---
+
 ## ADR-010 — Fairness and evaluator test methodology
 
 - **Date:** 2026-09-25
