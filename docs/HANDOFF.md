@@ -72,7 +72,7 @@ npx playwright test tests/e2e/features.spec.ts --repeat-each=2
 
 ### Half-done
 
-- The long AI run (about 190k simulated hands) was started locally when the PR opened. Its result goes into the PR and into `PROGRESS.md` before merge.
+- The long AI run (`npx vitest run --config vitest.long.config.ts tests/long/ai-sim.test.ts`, about 190k simulated hands) passes 4/4 locally in 1,745 s: 100k-hand style targets, TAG beating stations and maniacs, and both exploit bots losing.
 
 ### Exact next step
 
