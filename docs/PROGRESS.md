@@ -5,18 +5,19 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 ## Phase 0 — Scaffold
 
 - [x] `AGENTS.md` committed to the repository
-- [~] `docs/` files created (`PROGRESS.md`, `HANDOFF.md` and `DECISIONS.md` done; `RULES.md` still to do)
-- [ ] Vite + React + TypeScript project (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
-- [ ] Directory structure from Section 4
-- [ ] ESLint + Prettier, including the `Math.random` ban
-- [ ] Import restriction: `src/ai/` cannot import `src/core/engine` internals
-- [ ] Vitest and Playwright set up
-- [ ] npm scripts: `dev`, `build`, `preview`, `test`, `test:long`, `e2e`, `lint`, `typecheck`, `check`
-- [ ] CI workflow (lint, typecheck, unit, fast statistical, e2e)
-- [ ] Manual `test:long` workflow
-- [ ] GitHub Pages deploy workflow and placeholder page
-- [ ] `vite-plugin-pwa` wired up
-- [ ] **Accept:** `npm run check` is green; the deployed placeholder page loads
+- [x] `docs/` files created: `PROGRESS.md`, `HANDOFF.md` and `DECISIONS.md` (`RULES.md` moved to Phase 2 by the owner)
+- [x] Vite + React + TypeScript project (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
+- [x] Directory structure from Section 4
+- [x] ESLint + Prettier, including the `Math.random` ban
+- [x] Import restriction: `src/ai/` cannot import `src/core/engine` internals (plus `src/core` purity and the i18n JSX-text ban), guarded by `tests/unit/lint-rules.test.ts`
+- [x] Vitest and Playwright set up (e2e at 360×640, iPhone SE, Pixel 7, iPad, desktop 1440×900)
+- [x] npm scripts: `dev`, `build`, `preview`, `test`, `test:long`, `e2e`, `lint`, `typecheck`, `format`, `format:check`, `icons`, `check`
+- [x] CI workflow (format, lint, typecheck, unit, build; separate e2e job), green on `main`
+- [x] Manual `test:long` workflow
+- [x] Placeholder page (pt-BR, via i18n, with the entertainment disclaimer)
+- [x] `vite-plugin-pwa` wired up (manifest, service worker, original icons), verified by e2e
+- [~] GitHub Pages deploy workflow: written and merged; **blocked** until the owner enables Pages (see `HANDOFF.md`)
+- [~] **Accept:** `npm run check` is green ✅; the deployed placeholder page loads ⏳ (blocked on Pages being enabled)
 
 ## Phase 1 — Core
 
@@ -32,7 +33,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 2 — Engine
 
-- [ ] `docs/RULES.md` written to match Section 5, including the position-label mapping for 2–9 players
+- [ ] `docs/RULES.md` written to match Section 5 (moved here from Phase 0 by the owner), including the position-label mapping for 2–9 players
+- [ ] Public `PlayerView` / `Action` contract in its own module outside `src/core/engine` (ADR-003)
 - [ ] Table state machine, `dispatch`, typed errors, events
 - [ ] Button, blinds, heads-up and the heads-up transition
 - [ ] Dealing order and burns
