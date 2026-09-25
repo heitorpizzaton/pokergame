@@ -241,7 +241,8 @@ export function TableScreen({
 
         {/* Bets on the betting line, slid in from each seat. */}
         {view.seats.map((seat) => {
-          if (seat.committed <= 0) return null;
+          // Once the hand is decided, every bet has gone into the pot.
+          if (seat.committed <= 0 || snap.result !== null) return null;
           const from = posOf(seat.seat);
           return (
             <ChipStack
@@ -287,7 +288,10 @@ export function TableScreen({
             />
           ))}
 
-        <div className={styles.potArea} style={{ left: `${pot.x}%`, top: `${pot.y}%` }}>
+        <div
+          className={styles.potArea}
+          style={{ left: `${center.x}%`, top: `calc(${center.y}% - 36px)` }}
+        >
           {collectedPot > 0 && !showResult && (
             <ChipStack
               amount={collectedPot}
@@ -298,6 +302,25 @@ export function TableScreen({
             />
           )}
           <Pots snapshot={snap} />
+          <ResultBanner
+            snapshot={snap}
+            onContinue={() => {
+              controller.skipWait();
+            }}
+          />
+          {snap.rabbit === 'available' && snap.phase === 'handResult' && (
+            <button
+              type="button"
+              className={styles.textButton}
+              data-testid="rabbit-hunt"
+              onClick={(e) => {
+                e.stopPropagation();
+                controller.revealRabbit();
+              }}
+            >
+              {strings.table.rabbitHunt}
+            </button>
+          )}
         </div>
 
         <div className={styles.center} style={{ left: `${center.x}%`, top: `${center.y}%` }}>
@@ -356,25 +379,6 @@ export function TableScreen({
           </div>
           {rabbit.length > 0 && (
             <span className={styles.rabbitLabel}>{strings.table.rabbitCards}</span>
-          )}
-          <ResultBanner
-            snapshot={snap}
-            onContinue={() => {
-              controller.skipWait();
-            }}
-          />
-          {snap.rabbit === 'available' && snap.phase === 'handResult' && (
-            <button
-              type="button"
-              className={styles.textButton}
-              data-testid="rabbit-hunt"
-              onClick={(e) => {
-                e.stopPropagation();
-                controller.revealRabbit();
-              }}
-            >
-              {strings.table.rabbitHunt}
-            </button>
           )}
         </div>
       </section>

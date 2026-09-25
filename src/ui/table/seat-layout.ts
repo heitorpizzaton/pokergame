@@ -37,7 +37,7 @@ export function betPosition(seat: SeatPosition, center: SeatPosition): SeatPosit
   return { x: seat.x + (center.x - seat.x) * t, y: seat.y + (center.y - seat.y) * t };
 }
 
-/** Where the pot sits, just above the board. */
+/** Where the pot's chips sit, just above the board (approximately; flights aim here). */
 export function potPosition(center: SeatPosition): SeatPosition {
-  return { x: center.x, y: center.y - 11 };
+  return { x: center.x, y: center.y - 9 };
 }
