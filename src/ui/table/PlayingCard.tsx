@@ -8,10 +8,18 @@ interface Props {
   readonly size?: 'small' | 'medium' | 'large';
   readonly dimmed?: boolean;
   readonly highlighted?: boolean;
+  /** Four-colour deck: clubs green, diamonds blue (AGENTS.md §11.1). */
+  readonly fourColor?: boolean;
 }
 
 /** A vector card with large indices; `card === null` renders the back. */
-export function PlayingCard({ card, size = 'medium', dimmed = false, highlighted = false }: Props) {
+export function PlayingCard({
+  card,
+  size = 'medium',
+  dimmed = false,
+  highlighted = false,
+  fourColor = false,
+}: Props) {
   const className = [
     styles.card,
     styles[size],
@@ -28,10 +36,14 @@ export function PlayingCard({ card, size = 'medium', dimmed = false, highlighted
     );
   }
   const suit = suitOf(card);
-  const red = suit === 1 || suit === 2;
+  const colour = fourColor
+    ? [styles.clubs, styles.diamonds, styles.red, styles.black][suit]
+    : suit === 1 || suit === 2
+      ? styles.red
+      : styles.black;
   return (
     <span
-      className={`${className} ${red ? (styles.red ?? '') : (styles.black ?? '')}`}
+      className={`${className} ${colour ?? ''}`}
       role="img"
       aria-label={cardLabel(card)}
       data-card={card}

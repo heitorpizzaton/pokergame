@@ -1,8 +1,11 @@
+import type { StyleId } from '../../ai/index.ts';
+import type { UserClock } from '../../app/game-controller.ts';
 import type { Card } from '../../core/cards/index.ts';
 import type { ActionRecord, PublicSeat } from '../../core/view/index.ts';
-import { formatChips, strings } from '../../i18n/index.ts';
+import { formatBigBlinds, formatChips, strings } from '../../i18n/index.ts';
 import { PlayingCard } from './PlayingCard.tsx';
 import styles from './Seat.module.css';
+import { UserTimer } from './UserTimer.tsx';
 
 interface Props {
   readonly seat: PublicSeat;
@@ -15,6 +18,13 @@ interface Props {
   readonly holeCards: readonly Card[] | null;
   readonly x: number;
   readonly y: number;
+  /** Display options from the settings. */
+  readonly bigBlind?: number | null;
+  readonly style?: StyleId | null;
+  readonly fourColor?: boolean;
+  readonly clock?: UserClock | null;
+  readonly haptics?: boolean;
+  readonly away?: boolean;
 }
 
 function actionLabel(action: ActionRecord): string {
@@ -43,6 +53,8 @@ function avatarHue(name: string): number {
 
 export function Seat(props: Props) {
   const { seat, isUser, isButton, isActing, isWinner, lastAction, holeCards, x, y } = props;
+  const chips = (amount: number) =>
+    props.bigBlind ? formatBigBlinds(amount, props.bigBlind) : formatChips(amount);
   const name = isUser ? strings.table.you : seat.name;
   const out = seat.status === 'eliminated';
   const status =
@@ -80,7 +92,12 @@ export function Seat(props: Props) {
       {cards && (
         <div className={styles.cards} aria-label={strings.table.holeCards(name)}>
           {cards.map((card, i) => (
-            <PlayingCard key={i} card={card} size={isUser ? 'large' : 'small'} />
+            <PlayingCard
+              key={i}
+              card={card}
+              size={isUser ? 'large' : 'small'}
+              fourColor={props.fourColor ?? false}
+            />
           ))}
         </div>
       )}
@@ -95,18 +112,21 @@ export function Seat(props: Props) {
         <span className={styles.info}>
           <span className={styles.name}>{name}</span>
           <span className={styles.stack} data-testid={isUser ? 'user-stack' : undefined}>
-            {formatChips(seat.stack)}
+            {chips(seat.stack)}
           </span>
         </span>
+        {props.clock && <UserTimer clock={props.clock} haptics={props.haptics ?? false} />}
         {isButton && (
           <span className={styles.dealer} role="img" aria-label={strings.table.dealer}>
             {strings.table.dealerShort}
           </span>
         )}
       </div>
+      {props.style && <span className={styles.badge}>{strings.styleBadges[props.style]}</span>}
+      {props.away && <span className={styles.status}>{strings.table.status.away}</span>}
       {status && <span className={styles.status}>{status}</span>}
       {!status && lastAction && <span className={styles.action}>{actionLabel(lastAction)}</span>}
-      {seat.committed > 0 && <span className={styles.bet}>{formatChips(seat.committed)}</span>}
+      {seat.committed > 0 && <span className={styles.bet}>{chips(seat.committed)}</span>}
       {seat.position && <span className={styles.position}>{seat.position}</span>}
     </div>
   );

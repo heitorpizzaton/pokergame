@@ -1,8 +1,11 @@
 import { useState, useSyncExternalStore } from 'react';
 import { potInView } from '../../app/bet-sizing.ts';
 import type { GameController, TableSnapshot } from '../../app/game-controller.ts';
+import type { Settings } from '../../app/settings.ts';
 import { formatChips, handName, strings } from '../../i18n/index.ts';
+import type { EquityClient } from '../../workers/equity-client.ts';
 import { ActionBar, PreActionBar } from '../table/ActionBar.tsx';
+import { OddsPanel } from '../table/OddsPanel.tsx';
 import { PlayingCard } from '../table/PlayingCard.tsx';
 import { Seat } from '../table/Seat.tsx';
 import { seatPositions, visualSlot } from '../table/seat-layout.ts';
@@ -12,11 +15,21 @@ import styles from './TableScreen.module.css';
 
 interface Props {
   readonly controller: GameController;
+  readonly settings: Settings;
+  readonly onSettingsChange: (patch: Partial<Settings>) => void;
+  readonly equity: EquityClient;
   readonly onExit: () => void;
   readonly onPlayAgain: () => void;
 }
 
-export function TableScreen({ controller, onExit, onPlayAgain }: Props) {
+export function TableScreen({
+  controller,
+  settings,
+  onSettingsChange,
+  equity,
+  onExit,
+  onPlayAgain,
+}: Props) {
   const snap = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const orientation = useOrientation();
   const [confirmQuit, setConfirmQuit] = useState(false);
@@ -75,7 +88,30 @@ export function TableScreen({ controller, onExit, onPlayAgain }: Props) {
             {strings.summary.skip}
           </button>
         ) : (
-          <span className={styles.headerSpacer} />
+          <span className={styles.headerButtons}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label={settings.sound ? strings.table.mute : strings.table.unmute}
+              aria-pressed={!settings.sound}
+              onClick={() => {
+                onSettingsChange({ sound: !settings.sound });
+              }}
+            >
+              <span aria-hidden="true">{settings.sound ? '🔊' : '🔇'}</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.textButton} ${settings.oddsPanel ? styles.toggleOn : ''}`}
+              aria-pressed={settings.oddsPanel}
+              data-testid="odds-toggle"
+              onClick={() => {
+                onSettingsChange({ oddsPanel: !settings.oddsPanel });
+              }}
+            >
+              %
+            </button>
+          </span>
         )}
       </header>
 
@@ -98,6 +134,12 @@ export function TableScreen({ controller, onExit, onPlayAgain }: Props) {
               holeCards={seat.seat === userSeat ? view.holeCards : null}
               x={pos.x}
               y={pos.y}
+              bigBlind={settings.stackInBigBlinds ? view.bigBlind : null}
+              style={settings.showNpcStyles ? (snap.styles[seat.seat] ?? null) : null}
+              fourColor={settings.fourColorDeck}
+              clock={seat.seat === userSeat ? snap.userClock : null}
+              haptics={settings.haptics}
+              away={seat.seat === userSeat && snap.away}
             />
           );
         })}
@@ -105,20 +147,73 @@ export function TableScreen({ controller, onExit, onPlayAgain }: Props) {
           <Pots snapshot={snap} />
           <div className={styles.board} aria-label={strings.table.board} data-testid="board">
             {view.board.slice(0, snap.boardShown).map((card) => (
-              <PlayingCard key={card} card={card} size="medium" />
+              <PlayingCard
+                key={card}
+                card={card}
+                size="medium"
+                fourColor={settings.fourColorDeck}
+              />
             ))}
+            {typeof snap.rabbit === 'object' &&
+              snap.rabbit?.map((card) => (
+                <PlayingCard
+                  key={`r${card}`}
+                  card={card}
+                  size="medium"
+                  dimmed
+                  fourColor={settings.fourColorDeck}
+                />
+              ))}
           </div>
+          {typeof snap.rabbit === 'object' && snap.rabbit !== null && (
+            <span className={styles.rabbitLabel}>{strings.table.rabbitCards}</span>
+          )}
           <ResultBanner
             snapshot={snap}
             onContinue={() => {
               controller.skipWait();
             }}
           />
+          {snap.rabbit === 'available' && snap.phase === 'handResult' && (
+            <button
+              type="button"
+              className={styles.textButton}
+              data-testid="rabbit-hunt"
+              onClick={() => {
+                controller.revealRabbit();
+              }}
+            >
+              {strings.table.rabbitHunt}
+            </button>
+          )}
         </div>
       </section>
 
       <footer className={styles.footer}>
-        {snap.phase === 'userTurn' && view.legal ? (
+        {snap.away && (
+          <div className={styles.away} role="status">
+            <span>{strings.table.away}</span>
+            <button
+              type="button"
+              className={styles.textButton}
+              onClick={() => {
+                controller.setAway(false);
+              }}
+            >
+              {strings.table.back}
+            </button>
+          </div>
+        )}
+        {settings.oddsPanel && userInHand && view.holeCards && view.street !== null && (
+          <OddsPanel
+            view={view}
+            board={view.board.slice(0, snap.boardShown)}
+            client={equity}
+            pot={potInView(view)}
+            fourColor={settings.fourColorDeck}
+          />
+        )}
+        {snap.phase === 'userTurn' && view.legal && !snap.away ? (
           <ActionBar
             key={`${view.handNumber}-${view.actions.length}-${view.street ?? ''}`}
             sizing={{
@@ -129,6 +224,7 @@ export function TableScreen({ controller, onExit, onPlayAgain }: Props) {
               pot: potInView(view),
               currentBet: view.currentBet,
             }}
+            confirmAllIn={settings.confirmAllIn}
             onAct={(action) => {
               controller.act(action);
             }}

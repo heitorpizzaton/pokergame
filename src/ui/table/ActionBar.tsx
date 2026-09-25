@@ -14,6 +14,8 @@ import styles from './ActionBar.module.css';
 interface Props {
   readonly sizing: SizingContext;
   readonly onAct: (action: PlayerAction) => void;
+  /** Ask before going all-in (setting, default off). */
+  readonly confirmAllIn?: boolean;
 }
 
 const t = strings.actions;
@@ -42,8 +44,9 @@ function presetLabel(id: PresetId): string {
 }
 
 /** Buttons and bet sizing for the user's turn (AGENTS.md §11.3). */
-export function ActionBar({ sizing, onAct }: Props) {
+export function ActionBar({ sizing, onAct, confirmAllIn = false }: Props) {
   const { legal } = sizing;
+  const [confirming, setConfirming] = useState(false);
   const aggressive = legal.canBet || legal.canRaise;
   const [target, setTarget] = useState(() => legal.minTo ?? 0);
   const presets = sizingPresets(sizing);
@@ -55,6 +58,35 @@ export function ActionBar({ sizing, onAct }: Props) {
 
   const aggressiveAction = (): PlayerAction =>
     isAllIn ? { type: 'allIn' } : { type: legal.canBet ? 'bet' : 'raise', to: target };
+
+  if (confirming && legal.maxTo !== null) {
+    return (
+      <div className={styles.bar} data-testid="action-bar" role="alertdialog">
+        <p className={styles.range}>{strings.table.confirmAllIn(formatChips(legal.maxTo))}</p>
+        <div className={styles.buttons}>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.fold}`}
+            onClick={() => {
+              setConfirming(false);
+            }}
+          >
+            {strings.table.cancel}
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.raise}`}
+            data-testid="confirm-all-in"
+            onClick={() => {
+              onAct({ type: 'allIn' });
+            }}
+          >
+            {strings.table.confirm}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.bar} data-testid="action-bar">
@@ -157,7 +189,9 @@ export function ActionBar({ sizing, onAct }: Props) {
             className={`${styles.button} ${styles.raise}`}
             data-testid="act-raise"
             onClick={() => {
-              onAct(aggressiveAction());
+              const action = aggressiveAction();
+              if (action.type === 'allIn' && confirmAllIn) setConfirming(true);
+              else onAct(action);
             }}
           >
             {isAllIn
