@@ -252,7 +252,7 @@ export function TableScreen({
               bigBlind={view.bigBlind}
               label={chips(seat.committed)}
               className={`${styles.chips} ${styles.betIn}`}
-              style={flight(from, betPosition(from, center))}
+              style={flight(from, betPosition(from, center, seat.seat === userSeat))}
               testId={`bet-${seat.seat}`}
             />
           );
@@ -260,7 +260,7 @@ export function TableScreen({
 
         {/* At the end of a street, the bets gather into the pot. */}
         {snap.collected?.bets.map((bet) => {
-          const at = betPosition(posOf(bet.seat), center);
+          const at = betPosition(posOf(bet.seat), center, bet.seat === userSeat);
           return (
             <ChipStack
               key={`collect-${snap.collected?.id ?? 0}-${bet.seat}`}

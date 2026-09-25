@@ -31,9 +31,16 @@ export function tableCenter(orientation: 'portrait' | 'landscape'): SeatPosition
   return { x: 50, y: orientation === 'portrait' ? 47 : 46 };
 }
 
-/** Where a seat's bet sits: on the betting line between the seat and the centre. */
-export function betPosition(seat: SeatPosition, center: SeatPosition): SeatPosition {
-  const t = 0.4;
+/**
+ * Where a seat's bet sits: on the betting line between the seat and the centre. The user's large
+ * hole cards reach further into the table, so the user's bet sits closer to the centre.
+ */
+export function betPosition(
+  seat: SeatPosition,
+  center: SeatPosition,
+  isUser = false,
+): SeatPosition {
+  const t = isUser ? 0.6 : 0.4;
   return { x: seat.x + (center.x - seat.x) * t, y: seat.y + (center.y - seat.y) * t };
 }
 

@@ -35,4 +35,25 @@ test.describe('menu and PWA', () => {
     });
     expect(scriptUrl).toMatch(/\/sw\.js$/);
   });
+
+  test('plays offline after the first visit (precached app, fonts and workers)', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/?speed=instant');
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    // The first visit precaches; wait until the worker controls the page.
+    await page.reload();
+    await expect
+      .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+      .toBe(true);
+    await context.setOffline(true);
+    await page.reload();
+    await page.getByRole('button', { name: strings.menu.newGame }).click();
+    await page.getByRole('button', { name: strings.setup.start }).click();
+    await expect(page.getByTestId('action-bar')).toBeVisible({ timeout: 20_000 });
+    expect(await page.evaluate(() => document.fonts.check('16px Manrope'))).toBe(true);
+  });
 });
