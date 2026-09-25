@@ -190,6 +190,19 @@ export function TableScreen({
           <div className={styles.feltLine} />
         </div>
 
+        {snap.commitment && (
+          <span
+            className={styles.commitment}
+            role="note"
+            title={snap.commitment}
+            aria-label={strings.table.commitment(snap.commitment)}
+            data-testid="commitment"
+          >
+            <Icon name="lock" size={12} />
+            {snap.commitment.slice(0, 8)}
+          </span>
+        )}
+
         {snap.away && (
           <div className={styles.away} role="status">
             <span>{strings.table.away}</span>

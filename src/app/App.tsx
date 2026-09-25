@@ -161,6 +161,7 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
     return new GameController({
       config: toEngineConfig(setup, names.slice(1), names[0] ?? strings.table.you),
       deckRng,
+      fairnessRng: rngs.fairness(),
       npcRng,
       speed: speedFor(current),
       driver: createDriver(seats, rngs),

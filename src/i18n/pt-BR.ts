@@ -171,6 +171,22 @@ export const ptBR = {
     hiddenCard: 'Carta virada',
     board: 'Cartas comunitárias',
     tableLabel: 'Mesa',
+    commitment: (hash: string) => `Compromisso do baralho desta mão (SHA-256): ${hash}`,
+  },
+  fairness: {
+    title: 'Prova de justiça',
+    intro:
+      'Antes da mão, o jogo publicou o SHA-256 do baralho embaralhado com um segredo (salt). Agora o baralho e o salt foram revelados: o hash confere se o baralho já estava definido antes da primeira carta.',
+    commitment: 'Compromisso (SHA-256)',
+    salt: 'Salt',
+    deck: 'Baralho, na ordem de distribuição',
+    text: 'Texto verificável (use qualquer ferramenta SHA-256)',
+    verify: 'Verificar',
+    verified:
+      'Verificado: o baralho foi definido antes da mão e as cartas saíram dele na ordem certa.',
+    commitmentFailed: 'Falhou: o baralho revelado não corresponde ao compromisso.',
+    cardsFailed: 'Falhou: as cartas da mão não correspondem ao baralho revelado.',
+    unavailable: 'Esta mão foi salva antes da prova de justiça existir.',
   },
   actions: {
     fold: 'Desistir',
