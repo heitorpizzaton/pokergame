@@ -58,6 +58,7 @@ describe('src/ai import boundary (§8.1)', () => {
     "import { x } from '../../core/eval/index.ts';",
     "import { x } from '../../core/equity/index.ts';",
     "import { x } from '../model/index.ts';",
+    "import type { PlayerView } from '../../core/view/index.ts';",
   ];
 
   it.each(allowed)('allows %j', async (code) => {
