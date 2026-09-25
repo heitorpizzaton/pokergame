@@ -32,6 +32,7 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+      - run: npm run budget
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

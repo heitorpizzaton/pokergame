@@ -95,6 +95,8 @@ describe('seeded RNG is unreachable from production code (§4.1)', () => {
     'src/ai/model/sample.ts',
     'src/ui/table/Sample.tsx',
     'src/app/sample.ts',
+    'src/app/debug/other.ts',
+    'src/app/load-rng-factory.ts',
     'src/workers/sample.ts',
   ];
 
@@ -103,6 +105,13 @@ describe('seeded RNG is unreachable from production code (§4.1)', () => {
       expect(await ruleIds(`${code}\nexport {};`, file)).toContain('no-restricted-imports');
     });
   }
+
+  it('exempts only the e2e debug factory (ADR-022)', async () => {
+    const code = "import { SeededRng } from '../../core/rng/seeded-rng.ts';\nexport {};";
+    expect(await ruleIds(code, 'src/app/debug/seeded-factory.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
 
   it('allows it in tests', async () => {
     const code = "import { SeededRng } from '../../src/core/rng/seeded-rng.ts';\nexport {};";
