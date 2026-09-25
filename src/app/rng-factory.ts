@@ -13,6 +13,11 @@ export interface RngFactory {
   brain(seat: number): Rng;
   /** Whether NPC brains may run in a worker (the seeded build keeps them in-process). */
   readonly workers: boolean;
+  /**
+   * Clock for NPC time budgets. The seeded build freezes it so decisions never depend on
+   * machine speed; production uses the real clock.
+   */
+  readonly brainClock?: () => number;
 }
 
 export const cryptoRngFactory: RngFactory = {

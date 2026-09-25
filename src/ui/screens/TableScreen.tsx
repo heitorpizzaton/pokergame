@@ -6,6 +6,7 @@ import type { Card } from '../../core/cards/index.ts';
 import { cardLabel, formatBigBlinds, formatChips, handName, strings } from '../../i18n/index.ts';
 import type { EquityClient } from '../../workers/equity-client.ts';
 import { sound, useTableEffects } from '../audio/useTableEffects.ts';
+import { Icon } from '../icons.tsx';
 import { ActionBar, PreActionBar } from '../table/ActionBar.tsx';
 import { ChipStack } from '../table/ChipStack.tsx';
 import { OddsPanel } from '../table/OddsPanel.tsx';
@@ -125,7 +126,7 @@ export function TableScreen({
             controller.pause();
           }}
         >
-          <span aria-hidden="true">❚❚</span>
+          <Icon name="pause" />
         </button>
         <span className={styles.headerInfo}>
           <span data-testid="hand-number">{strings.table.handNumber(view.handNumber)}</span>
@@ -156,7 +157,7 @@ export function TableScreen({
                 sound.unlock();
               }}
             >
-              <span aria-hidden="true">{settings.sound ? '🔊' : '🔇'}</span>
+              <Icon name={settings.sound ? 'soundOn' : 'soundOff'} />
             </button>
             <button
               type="button"
@@ -295,7 +296,12 @@ export function TableScreen({
         </div>
 
         <div className={styles.center} style={{ left: `${center.x}%`, top: `${center.y}%` }}>
-          <div className={styles.board} aria-label={strings.table.board} data-testid="board">
+          <div
+            className={styles.board}
+            role="group"
+            aria-label={strings.table.board}
+            data-testid="board"
+          >
             {snap.boardShown >= 3 && (
               <span
                 key={`burn-${view.handNumber}-${snap.boardShown}`}

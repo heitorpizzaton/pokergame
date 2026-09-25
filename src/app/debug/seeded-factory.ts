@@ -21,5 +21,7 @@ export function seededRngFactory(seed: number): RngFactory {
     npc: () => new SeededRng(current + 1),
     brain: (seat) => new SeededRng(current + 17 * (seat + 1)),
     workers: false,
+    // Budgets never expire, so every decision runs its full sample count on any machine.
+    brainClock: () => 0,
   };
 }

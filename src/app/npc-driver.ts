@@ -1,4 +1,4 @@
-import { NpcBrain, type StyleId } from '../ai/index.ts';
+import { type BrainOptions, NpcBrain, type StyleId } from '../ai/index.ts';
 import type { Rng } from '../core/rng/index.ts';
 import type { PlayerAction, PlayerView } from '../core/view/index.ts';
 
@@ -22,9 +22,13 @@ export interface NpcSeat {
 export class LocalNpcDriver implements NpcDriver {
   readonly #brains = new Map<number, NpcBrain>();
 
-  constructor(seats: readonly NpcSeat[], rngFor: (seat: number) => Rng) {
+  constructor(
+    seats: readonly NpcSeat[],
+    rngFor: (seat: number) => Rng,
+    options: BrainOptions = {},
+  ) {
     for (const { seat, style } of seats) {
-      this.#brains.set(seat, new NpcBrain(seat, style, rngFor(seat)));
+      this.#brains.set(seat, new NpcBrain(seat, style, rngFor(seat), options));
     }
   }
 

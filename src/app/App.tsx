@@ -83,7 +83,11 @@ function createDriver(seats: readonly NpcSeat[], rngs: RngFactory): NpcDriver {
   } catch {
     // Fall through to in-process brains.
   }
-  return new LocalNpcDriver(seats, (seat) => rngs.brain(seat));
+  return new LocalNpcDriver(
+    seats,
+    (seat) => rngs.brain(seat),
+    rngs.brainClock ? { now: rngs.brainClock } : {},
+  );
 }
 
 function createEquityClient(): EquityClient {

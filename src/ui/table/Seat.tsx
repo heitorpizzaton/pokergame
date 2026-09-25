@@ -103,7 +103,7 @@ export function Seat(props: Props) {
       data-status={seat.status}
     >
       {cards && (
-        <div className={styles.cards} aria-label={strings.table.holeCards(name)}>
+        <div className={styles.cards} role="group" aria-label={strings.table.holeCards(name)}>
           {cards.map((card, i) => (
             <PlayingCard
               key={`${props.handNumber ?? 0}-${i}`}

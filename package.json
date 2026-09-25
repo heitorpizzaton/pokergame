@@ -43,6 +43,7 @@
     "sim": "node scripts/sim.ts",
     "e2e": "vite build --mode e2e && playwright test",
     "budget": "node scripts/check-bundle.ts",
+    "visual": "vite build --mode e2e && playwright test --config playwright.visual.config.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
     "format": "prettier --write .",
