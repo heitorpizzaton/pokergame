@@ -1,0 +1,134 @@
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) calc(var(--space-3) + var(--safe-right))
+    calc(var(--space-2) + var(--safe-bottom)) calc(var(--space-3) + var(--safe-left));
+  background: var(--color-glass-strong);
+  border-top: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sizing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.presets {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+}
+
+.preset {
+  flex: 1 0 auto;
+  min-width: 44px;
+  min-height: 34px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  background: var(--color-glass);
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+
+.presetActive {
+  border-color: var(--color-gold);
+  color: var(--color-gold-light);
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.slider input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-gold);
+}
+
+.step {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-glass-border);
+  border-radius: 50%;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font-size: 1.3rem;
+}
+
+.amount {
+  width: 84px;
+  height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 30%);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.range {
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.button {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fold {
+  background: var(--color-action-fold);
+}
+
+.call {
+  background: var(--color-action-call);
+}
+
+.raise {
+  background: var(--color-action-raise);
+  color: #1b1405;
+}
+
+.pre {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.pre input {
+  accent-color: var(--color-gold);
+}
+
+.preActive {
+  border-color: var(--color-gold);
+}
