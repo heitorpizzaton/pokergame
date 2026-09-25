@@ -91,4 +91,25 @@ describe('table effects for sound, haptics and animation (AGENTS.md §11.4–11.
     }
     throw new Error('No showdown found');
   });
+
+  it('reports the bets gathered into the pot at each street end', () => {
+    for (let seed = 1; seed < 40; seed++) {
+      const { controller, scheduler } = setup('instant', seed);
+      controller.start();
+      for (let i = 0; i < 400; i++) {
+        const snap = controller.getSnapshot();
+        if (snap.view.street === 'flop' && snap.collected) {
+          const gathered = snap.collected.bets.reduce((sum, b) => sum + b.amount, 0);
+          const pot = snap.view.pots.reduce((sum, p) => sum + p.amount, 0);
+          expect(gathered).toBe(pot);
+          expect(snap.collected.bets.every((b) => b.amount > 0)).toBe(true);
+          return;
+        }
+        if (snap.phase === 'userTurn') {
+          controller.act(snap.view.legal?.canCheck ? { type: 'check' } : { type: 'call' });
+        } else if (!scheduler.runNext()) break;
+      }
+    }
+    throw new Error('No flop reached');
+  });
 });
