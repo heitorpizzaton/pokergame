@@ -75,7 +75,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 - [x] `docs/AI.md` with style targets per table size
 - [x] Simulation harness (`npm run sim`) and exploit checks (`test:long`)
 - [x] Setup: per-opponent style choice or "Aleatório" (realistic mix, at most two maniacs)
-- [~] **Accept:** style stats within target (20k-hand calibration run: all six in range; the 100k-hand `test:long` run is recorded in HANDOFF); boundary test passes; exploit checks pass; decisions stay well inside the time budget
+- [x] **Accept:** style stats within target (20k-hand calibration run: all six in range; the `tests/long/ai-sim.test.ts` 100k-hand run passes 4/4 in about 29 min); boundary test passes; exploit checks pass; decisions stay well inside the time budget
 
 ## Phase 6 — Features
 
