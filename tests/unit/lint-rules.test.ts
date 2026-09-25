@@ -82,6 +82,33 @@ describe('src/core purity (§4)', () => {
   });
 });
 
+describe('seeded RNG is unreachable from production code (§4.1)', () => {
+  const imports = [
+    "import { SeededRng } from './seeded-rng.ts';",
+    "import { SeededRng } from '../rng/seeded-rng.ts';",
+    "import { SeededRng } from '../../core/rng/seeded-rng';",
+  ];
+  const files = [
+    'src/core/rng/index.ts',
+    'src/core/engine/sample.ts',
+    'src/ai/model/sample.ts',
+    'src/ui/table/Sample.tsx',
+    'src/app/sample.ts',
+    'src/workers/sample.ts',
+  ];
+
+  for (const file of files) {
+    it.each(imports)(`rejects %j in ${file}`, async (code) => {
+      expect(await ruleIds(`${code}\nexport {};`, file)).toContain('no-restricted-imports');
+    });
+  }
+
+  it('allows it in tests', async () => {
+    const code = "import { SeededRng } from '../../src/core/rng/seeded-rng.ts';\nexport {};";
+    expect(await ruleIds(code, 'tests/unit/sample.test.ts')).not.toContain('no-restricted-imports');
+  });
+});
+
 describe('i18n literal ban (§2.7)', () => {
   it('rejects hardcoded text in UI components', async () => {
     const code = 'export function A() {\n  return <p>Desistir</p>;\n}\n';
