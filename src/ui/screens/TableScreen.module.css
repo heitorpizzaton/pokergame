@@ -5,22 +5,41 @@
   overflow: hidden;
 }
 
+/* ---- Header (glass HUD) ---------------------------------------------------------------- */
+
 .header {
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   padding: calc(var(--space-1) + var(--safe-top)) calc(var(--space-2) + var(--safe-right))
     var(--space-1) calc(var(--space-2) + var(--safe-left));
-  background: rgb(0 0 0 / 25%);
+  background: linear-gradient(180deg, rgb(0 0 0 / 45%), rgb(0 0 0 / 15%));
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
 }
 
 .headerInfo {
   display: flex;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px var(--space-3);
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  font-weight: 700;
+  color: var(--color-text);
   font-variant-numeric: tabular-nums;
+}
+
+.blinds {
+  color: var(--color-gold-light);
+}
+
+.headerButtons {
+  display: flex;
+  gap: var(--space-1);
 }
 
 .iconButton,
@@ -31,60 +50,145 @@
   border-radius: var(--radius-md);
   background: var(--color-glass);
   color: var(--color-text);
+  font-weight: 700;
+  transition: background calc(var(--duration-fade) * var(--anim-scale));
+}
+
+.iconButton:hover,
+.textButton:hover {
+  background: var(--color-glass-hover);
 }
 
 .textButton {
   padding: 0 var(--space-3);
 }
 
-.headerSpacer {
-  width: 44px;
+.toggleOn {
+  border-color: var(--color-gold);
+  color: var(--color-gold-light);
+  box-shadow: inset 0 0 12px rgb(217 184 101 / 25%);
 }
+
+/* ---- Table ---------------------------------------------------------------------------- */
 
 .tableArea {
   position: relative;
   min-height: 0;
-  margin: var(--space-2) var(--space-3);
+  margin: var(--space-2) calc(var(--space-3) + var(--safe-right)) var(--space-2)
+    calc(var(--space-3) + var(--safe-left));
+  /* Flights between seats, bets and the pot are expressed in cqw/cqh. */
+  container-type: size;
 }
 
+/* Wooden rail (border box) around the felt (padding box), with a gold inlay. */
 .felt {
   position: absolute;
-  inset: 12% 14% 14%;
-  border-radius: 45% / 38%;
-  background: radial-gradient(
-    ellipse at 50% 40%,
-    var(--color-felt-light),
-    var(--color-felt) 60%,
-    var(--color-felt-deep)
-  );
-  border: 10px solid var(--color-rail);
+  inset: 11% 13% 13%;
+  border: 14px solid transparent;
+  border-radius: 46% / 36%;
+  background:
+    var(--texture-noise) padding-box,
+    radial-gradient(
+        ellipse at 50% 42%,
+        var(--color-felt-light) 0%,
+        var(--color-felt) 55%,
+        var(--color-felt-deep) 100%
+      )
+      padding-box,
+    linear-gradient(
+        160deg,
+        var(--color-rail-light),
+        var(--color-rail) 30%,
+        var(--color-rail-dark) 70%,
+        var(--color-rail) 100%
+      )
+      border-box;
   box-shadow:
-    inset 0 0 40px rgb(0 0 0 / 45%),
-    0 6px 24px rgb(0 0 0 / 50%);
+    inset 0 0 0 1px rgb(243 217 139 / 45%),
+    inset 0 0 50px rgb(0 0 0 / 55%),
+    0 0 0 1px rgb(0 0 0 / 60%),
+    var(--shadow-deep);
 }
 
 .landscape .felt {
-  inset: 10% 8% 12%;
-  border-radius: 40% / 45%;
+  inset: 9% 7% 11%;
+  border-radius: 38% / 46%;
+}
+
+/* The betting line: a faint gold ellipse inside the rail. */
+.feltLine {
+  position: absolute;
+  inset: 11%;
+  border: 1px solid var(--color-felt-line);
+  border-radius: inherit;
 }
 
 .center {
   position: absolute;
-  left: 50%;
-  top: 44%;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  width: min(78%, 360px);
-  z-index: 1;
+  width: min(78%, 380px);
+  z-index: 3;
 }
 
 .board {
+  position: relative;
   display: flex;
-  gap: 4px;
-  min-height: 53px;
+  gap: 5px;
+}
+
+.slot {
+  width: 40px;
+  height: 56px;
+  border: 1px dashed rgb(243 217 139 / 22%);
+  border-radius: 7px;
+  background: rgb(0 0 0 / 12%);
+}
+
+/* The burn card slides from the dealer to the muck, then fades. */
+.burn {
+  position: absolute;
+  top: 8px;
+  left: -26px;
+  width: 22px;
+  height: 31px;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, var(--color-card-back-line) 0 1px, transparent 1px 5px),
+    linear-gradient(150deg, var(--color-card-back-a), var(--color-card-back-b));
+  box-shadow: inset 0 0 0 1.5px var(--color-card-face);
+  opacity: 0;
+  animation: burn calc(700ms * var(--anim-scale)) var(--ease-out) both;
+}
+
+@keyframes burn {
+  from {
+    opacity: 1;
+    transform: translate(var(--from-x), var(--from-y)) rotate(-30deg) scale(0.8);
+  }
+
+  30% {
+    opacity: 1;
+    transform: rotate(-12deg);
+  }
+
+  to {
+    opacity: 0;
+    transform: rotate(-12deg);
+  }
+}
+
+.potArea {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .pots {
@@ -92,38 +196,167 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-1);
-  min-height: 20px;
 }
 
 .pot {
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 40%);
-  font-size: 0.75rem;
+  background: rgb(0 0 0 / 45%);
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Chips in motion ------------------------------------------------------------------ */
+
+.chips {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+}
+
+.betIn {
+  animation: betIn calc(var(--duration-chip) * var(--anim-scale)) var(--ease-out) both;
+}
+
+@keyframes betIn {
+  from {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--from-x)), calc(-50% + var(--from-y)));
+  }
+
+  25% {
+    opacity: 1;
+  }
+}
+
+.toPot {
+  opacity: 0;
+  animation: toPot calc(var(--duration-chip) * var(--anim-scale)) var(--ease-out) both;
+}
+
+@keyframes toPot {
+  from {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--from-x)), calc(-50% + var(--from-y)));
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.toWinner {
+  opacity: 0;
+  animation: toWinner calc(600ms * var(--anim-scale)) var(--ease-out) both;
+  animation-delay: calc(250ms * var(--anim-scale));
+}
+
+@keyframes toWinner {
+  from {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--from-x)), calc(-50% + var(--from-y))) scale(1.1);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+/* ---- Result toast --------------------------------------------------------------------- */
 
 .banner {
   display: flex;
   flex-direction: column;
   gap: 2px;
   max-width: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-gold);
   border-radius: var(--radius-md);
-  background: rgb(0 0 0 / 65%);
+  background: linear-gradient(180deg, rgb(30 24 10 / 88%), rgb(8 8 6 / 88%));
+  box-shadow:
+    0 0 24px rgb(217 184 101 / 30%),
+    var(--shadow-soft);
   color: var(--color-gold-light);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
   text-align: center;
+  animation: toast calc(320ms * var(--anim-scale)) var(--ease-out) both;
 }
 
+.runoutBanner {
+  border-color: var(--color-timer-warning);
+  color: var(--color-text);
+  box-shadow: 0 0 24px rgb(255 107 87 / 30%);
+}
+
+.tapHint {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-dim);
+}
+
+@keyframes toast {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+.rabbitLabel {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.away {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: min(100%, 360px);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-timer-warning);
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 70%);
+  font-size: 0.8rem;
+}
+
+/* ---- Footer (action bar, odds panel) --------------------------------------------------- */
+
 .footer {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
   min-height: 64px;
+}
+
+/* On wide screens the controls stay in a comfortable column instead of spanning the window. */
+.footer > * {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
 }
 
 .footerSpacer {
   height: calc(64px + var(--safe-bottom));
 }
+
+/* ---- Pause dialog --------------------------------------------------------------------- */
 
 .overlay {
   position: fixed;
@@ -133,6 +366,8 @@
   place-items: center;
   padding: var(--space-4);
   background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .dialog {
@@ -140,7 +375,8 @@
   padding: var(--space-6);
   border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-lg);
-  background: var(--color-panel);
+  background: linear-gradient(180deg, rgb(16 44 38 / 96%), rgb(8 24 21 / 96%));
+  box-shadow: var(--shadow-deep);
 }
 
 .dialog h2 {
@@ -175,11 +411,11 @@
   min-height: 48px;
   border: none;
   border-radius: var(--radius-md);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .primary {
-  background: var(--color-gold);
+  background: linear-gradient(180deg, var(--color-gold-light), var(--color-gold));
   color: #1b1405;
 }
 
@@ -192,37 +428,4 @@
 .danger {
   background: var(--color-action-fold);
   color: #fff;
-}
-
-.headerButtons {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.toggleOn {
-  border-color: var(--color-gold);
-  color: var(--color-gold-light);
-}
-
-.rabbitLabel {
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
-}
-
-.away {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  z-index: 5;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: min(100%, 360px);
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-timer-warning);
-  border-radius: var(--radius-md);
-  background: rgb(0 0 0 / 55%);
-  font-size: 0.8rem;
 }

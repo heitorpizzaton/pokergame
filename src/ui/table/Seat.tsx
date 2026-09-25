@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { StyleId } from '../../ai/index.ts';
 import type { UserClock } from '../../app/game-controller.ts';
 import type { Card } from '../../core/cards/index.ts';
@@ -25,6 +26,18 @@ interface Props {
   readonly clock?: UserClock | null;
   readonly haptics?: boolean;
   readonly away?: boolean;
+  /** Plays the timer warning sound (AGENTS.md §9). */
+  readonly onTimerWarning?: () => void;
+  /** Deal animation: delay of each hole card and the dealer's offset (container units). */
+  readonly deal?: {
+    readonly delays: readonly number[];
+    readonly fromX: number;
+    readonly fromY: number;
+  };
+  /** Keys the hole cards so each hand's deal animates once. */
+  readonly handNumber?: number;
+  /** Cards to highlight (the winning five). */
+  readonly highlight?: ReadonlySet<Card>;
 }
 
 function actionLabel(action: ActionRecord): string {
@@ -93,10 +106,21 @@ export function Seat(props: Props) {
         <div className={styles.cards} aria-label={strings.table.holeCards(name)}>
           {cards.map((card, i) => (
             <PlayingCard
-              key={i}
+              key={`${props.handNumber ?? 0}-${i}`}
               card={card}
               size={isUser ? 'large' : 'small'}
               fourColor={props.fourColor ?? false}
+              highlighted={card !== null && (props.highlight?.has(card) ?? false)}
+              enter={props.deal ? 'deal' : null}
+              motion={
+                props.deal
+                  ? ({
+                      '--delay': `${props.deal.delays[i] ?? 0}ms`,
+                      '--from-x': `${props.deal.fromX}cqw`,
+                      '--from-y': `${props.deal.fromY}cqh`,
+                    } as CSSProperties)
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -115,7 +139,13 @@ export function Seat(props: Props) {
             {chips(seat.stack)}
           </span>
         </span>
-        {props.clock && <UserTimer clock={props.clock} haptics={props.haptics ?? false} />}
+        {props.clock && (
+          <UserTimer
+            clock={props.clock}
+            haptics={props.haptics ?? false}
+            onWarning={props.onTimerWarning}
+          />
+        )}
         {isButton && (
           <span className={styles.dealer} role="img" aria-label={strings.table.dealer}>
             {strings.table.dealerShort}
@@ -126,7 +156,6 @@ export function Seat(props: Props) {
       {props.away && <span className={styles.status}>{strings.table.status.away}</span>}
       {status && <span className={styles.status}>{status}</span>}
       {!status && lastAction && <span className={styles.action}>{actionLabel(lastAction)}</span>}
-      {seat.committed > 0 && <span className={styles.bet}>{chips(seat.committed)}</span>}
       {seat.position && <span className={styles.position}>{seat.position}</span>}
     </div>
   );

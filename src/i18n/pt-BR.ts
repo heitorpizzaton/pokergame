@@ -14,6 +14,55 @@ export const ptBR = {
     continueGame: 'Continuar partida',
     history: 'Histórico',
     settings: 'Configurações',
+    guide: 'Como jogar',
+  },
+  guide: {
+    title: 'Como jogar',
+    back: 'Voltar',
+    intro:
+      "Texas Hold'em sem limite: cada jogador recebe 2 cartas fechadas e divide 5 cartas comunitárias com a mesa. Ganha quem formar a melhor mão de 5 cartas, ou quem fizer todos os outros desistirem.",
+    sections: [
+      {
+        title: 'Objetivo',
+        body: 'Ganhe as fichas dos outros jogadores. Cada um começa com a mesma quantidade e quem fica sem fichas é eliminado. A partida termina quando um jogador tem todas as fichas.',
+      },
+      {
+        title: 'Botão e blinds',
+        body: 'O botão (Dealer) anda uma posição no sentido horário a cada mão. Os dois jogadores à esquerda do botão pagam o small blind e o big blind antes das cartas. No mano a mano (dois jogadores), o botão paga o small blind.',
+      },
+      {
+        title: 'Rodadas de apostas',
+        body: 'Há quatro rodadas: pré-flop (só com as suas 2 cartas), flop (3 cartas na mesa), turn (a 4ª) e river (a 5ª). No pré-flop começa quem está à esquerda do big blind; nas outras, o primeiro jogador ativo à esquerda do botão.',
+      },
+      {
+        title: 'Suas ações',
+        body: 'Desistir: abandona a mão. Passar: segue sem apostar, se ninguém apostou. Pagar: iguala a aposta atual. Apostar ou Aumentar: coloca mais fichas; o aumento mínimo é do tamanho da última aposta ou aumento. All-in: aposta todas as suas fichas.',
+      },
+      {
+        title: 'Showdown e potes',
+        body: 'Se dois ou mais jogadores chegarem ao fim, as cartas são mostradas e a melhor mão leva o pote; empates dividem. Quem está all-in só disputa o valor que conseguiu cobrir de cada adversário; o excedente forma um pote lateral.',
+      },
+      {
+        title: 'Probabilidades',
+        body: 'O painel Probabilidades mostra sua equity contra mãos aleatórias, seus outs e as pot odds. Ele usa só as suas cartas e as da mesa. Os oponentes nunca veem as suas cartas nem as do baralho.',
+      },
+    ],
+    rankingTitle: 'Ranking das mãos (da mais forte para a mais fraca)',
+    rankings: [
+      { name: 'Royal Flush', body: 'Ás, Rei, Dama, Valete e Dez do mesmo naipe.' },
+      { name: 'Straight Flush', body: 'Cinco cartas em sequência do mesmo naipe.' },
+      { name: 'Quadra', body: 'Quatro cartas do mesmo valor.' },
+      { name: 'Full House', body: 'Uma trinca e um par.' },
+      { name: 'Flush', body: 'Cinco cartas do mesmo naipe, fora de sequência.' },
+      { name: 'Sequência', body: 'Cinco cartas em sequência. O Ás pode ser baixo: Ás-2-3-4-5.' },
+      { name: 'Trinca', body: 'Três cartas do mesmo valor.' },
+      { name: 'Dois Pares', body: 'Dois pares diferentes.' },
+      { name: 'Par', body: 'Duas cartas do mesmo valor.' },
+      { name: 'Carta Alta', body: 'Nenhuma combinação: vale a carta mais alta.' },
+    ],
+    example: (name: string) => `Exemplo: ${name}`,
+    tieNote:
+      'Em empates de categoria, decide o valor das cartas (por exemplo, o maior par) e depois as cartas restantes, os kickers. Naipes nunca desempatam.',
   },
   settings: {
     title: 'Configurações',
@@ -96,6 +145,13 @@ export const ptBR = {
     confirm: 'Confirmar',
     cancel: 'Cancelar',
     yourTurn: 'Sua vez',
+    yourTurnWith: (cards: string, toCall: string | null) =>
+      toCall
+        ? `Sua vez. Você tem ${cards}. ${toCall} para continuar.`
+        : `Sua vez. Você tem ${cards}.`,
+    newStreet: (cards: string) => `Na mesa: ${cards}.`,
+    tapToContinue: 'Toque para continuar',
+    potTotal: (amount: string) => `Pote ${amount}`,
     status: {
       folded: 'Desistiu',
       allIn: 'All-in',
@@ -114,6 +170,7 @@ export const ptBR = {
     holeCards: (name: string) => `Cartas de ${name}`,
     hiddenCard: 'Carta virada',
     board: 'Cartas comunitárias',
+    tableLabel: 'Mesa',
   },
   actions: {
     fold: 'Desistir',
@@ -167,6 +224,8 @@ export const ptBR = {
     advanced: 'Avançado (estimativa)',
     cleanOuts: 'Outs limpos',
     taintedOuts: 'Outs que podem ajudar um oponente',
+    runoutTitle: 'Chances até o fim',
+    runoutEquity: (name: string, pct: string) => `${name}: ${pct}`,
   },
   history: {
     title: 'Histórico de mãos',

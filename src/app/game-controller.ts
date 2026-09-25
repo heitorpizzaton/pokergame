@@ -107,6 +107,13 @@ export interface TableSnapshot {
   readonly styles: readonly (StyleId | null)[];
   /** Seats in the order hole cards were dealt this hand, one entry per card (§5.3). */
   readonly dealOrder: readonly number[];
+  /** Bets gathered into the pot at the last street end (animated once per `id`). */
+  readonly collected: CollectedBets | null;
+}
+
+export interface CollectedBets {
+  readonly id: number;
+  readonly bets: readonly { readonly seat: number; readonly amount: number }[];
 }
 
 /** Everything needed to resume a game at a hand boundary (never a deck in progress). */
@@ -225,6 +232,8 @@ export class GameController {
   #handLog: { at: number; event: EngineEvent }[] = [];
   #handStartedAt = 0;
   #dealOrder: number[] = [];
+  #collected: CollectedBets | null = null;
+  #collectId = 0;
   #announcedTurn: string | null = null;
   #gameOverNotified = false;
   #snapshot: TableSnapshot;
@@ -356,8 +365,13 @@ export class GameController {
     this.#showResult();
   }
 
-  /** Skips the wait after a hand or during a runout ("toque para continuar"). */
+  /** Skips the deal animation, a runout or the wait after a hand ("toque para continuar"). */
   skipWait(): void {
+    if (this.#phase === 'dealing') {
+      this.#clearTimer();
+      this.#continue();
+      return;
+    }
     if (this.#phase !== 'handResult' && this.#phase !== 'runout') return;
     this.#clearTimer();
     if (this.#phase === 'runout') {
@@ -423,6 +437,7 @@ export class GameController {
     this.#boardShown = 0;
     this.#handLog = [];
     this.#dealOrder = [];
+    this.#collected = null;
     this.#handStartedAt = this.#scheduler.now();
     this.#absorb(this.#engine.dispatch({ type: 'startHand' }), 0, null);
     const hand = this.#engine.state.hand;
@@ -644,9 +659,26 @@ export class GameController {
   }
 
   #dispatchAct(seat: number, action: PlayerAction): void {
-    const boardBefore = this.#engine.state.hand?.board.length ?? 0;
-    const streetBefore = this.#engine.state.hand?.street ?? null;
-    this.#absorb(this.#engine.dispatch({ type: 'act', seat, action }), boardBefore, streetBefore);
+    const before = this.#engine.state.hand;
+    const boardBefore = before?.board.length ?? 0;
+    const streetBefore = before?.street ?? null;
+    const committed = new Map<number, number>();
+    for (const p of before?.players ?? []) if (p) committed.set(p.seat, p.committed);
+    const events = this.#engine.dispatch({ type: 'act', seat, action });
+    for (const e of events) {
+      // `to` is the actor's street total after the action.
+      if (e.type === 'ActionTaken' && e.action.kind !== 'fold' && e.action.kind !== 'check') {
+        committed.set(e.action.seat, e.action.to);
+      }
+    }
+    this.#absorb(events, boardBefore, streetBefore);
+    const after = this.#engine.state.hand;
+    if (after && (after.street !== streetBefore || after.phase === 'complete')) {
+      const bets = [...committed].flatMap(([s, amount]) =>
+        amount > 0 ? [{ seat: s, amount }] : [],
+      );
+      if (bets.length > 0) this.#collected = { id: ++this.#collectId, bets };
+    }
   }
 
   /** Common bookkeeping after any engine command: stats, action chips, runout, result. */
@@ -819,6 +851,7 @@ export class GameController {
       rabbit: this.#rabbit,
       styles: this.#styles,
       dealOrder: [...this.#dealOrder],
+      collected: this.#collected,
     };
   }
 

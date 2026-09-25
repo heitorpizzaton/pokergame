@@ -1,0 +1,62 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.stack {
+  position: relative;
+  width: 18px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+/* A chip seen from above at an angle: coloured face, dashed white edge spots, darker rim. */
+.chip {
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c) 0 42%, rgb(255 255 255 / 25%) 43% 47%, var(--c) 48%);
+  border: 2.5px dashed var(--chip-edge);
+  box-shadow:
+    0 0 0 1px var(--c),
+    0 2px 0 rgb(0 0 0 / 45%);
+}
+
+.csb {
+  --c: var(--chip-sb);
+}
+
+.cbb {
+  --c: var(--chip-bb);
+}
+
+.c5bb {
+  --c: var(--chip-5bb);
+}
+
+.c25bb {
+  --c: var(--chip-25bb);
+}
+
+.c100bb {
+  --c: var(--chip-100bb);
+}
+
+.c500bb {
+  --c: var(--chip-500bb);
+}
+
+.label {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 55%);
+  color: var(--color-chip-label);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

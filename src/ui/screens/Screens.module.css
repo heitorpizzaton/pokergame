@@ -4,31 +4,70 @@
   min-height: 100dvh;
   padding: calc(var(--space-6) + var(--safe-top)) calc(var(--space-4) + var(--safe-right))
     calc(var(--space-6) + var(--safe-bottom)) calc(var(--space-4) + var(--safe-left));
+  background:
+    var(--texture-noise),
+    radial-gradient(
+      ellipse at 50% 38%,
+      var(--color-felt-light) 0%,
+      var(--color-felt) 40%,
+      var(--color-felt-deep) 75%,
+      var(--color-room) 100%
+    );
+  background-attachment: fixed;
 }
 
 .panel {
+  position: relative;
   width: 100%;
   max-width: 440px;
   padding: var(--space-6);
-  background: var(--color-glass);
+  background: linear-gradient(180deg, rgb(6 26 22 / 72%), rgb(4 16 14 / 82%));
   border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgb(243 217 139 / 25%),
+    var(--shadow-deep);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
 }
 
-.logo {
-  display: block;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto var(--space-4);
+.fan {
+  display: flex;
+  justify-content: center;
+  height: 86px;
+  margin: calc(-1 * var(--space-2)) 0 var(--space-4);
+}
+
+.fan > * {
+  margin: 0 -14px;
+  transform-origin: 50% 120%;
+  transform: rotate(calc((var(--i) - 2) * 9deg)) translateY(calc(var(--lift) * 1px));
+  animation: fanIn calc(600ms * var(--anim-scale)) var(--ease-out) both;
+  animation-delay: calc(var(--i) * 70ms * var(--anim-scale));
+}
+
+@keyframes fanIn {
+  from {
+    opacity: 0;
+    transform: rotate(0deg) translateY(20px);
+  }
 }
 
 .title {
   margin: 0;
-  font-size: clamp(1.6rem, 7vw, 2.3rem);
+  font-size: clamp(1.8rem, 8vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
   text-align: center;
-  color: var(--color-gold-light);
+  background: linear-gradient(
+    180deg,
+    var(--color-gold-light),
+    var(--color-gold) 60%,
+    var(--color-gold-deep)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .subtitle {
@@ -62,7 +101,15 @@
 
 .primary {
   border: none;
-  background: var(--color-gold);
+  background: linear-gradient(
+    180deg,
+    var(--color-gold-light),
+    var(--color-gold) 55%,
+    var(--color-gold-deep)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 45%),
+    0 4px 14px rgb(217 184 101 / 25%);
   color: #1b1405;
 }
 

@@ -32,12 +32,16 @@ import { type GameSetup, loadLastSetup, saveLastSetup, toEngineConfig } from './
 const HistoryScreen = lazy(() =>
   import('../ui/screens/HistoryScreen.tsx').then((m) => ({ default: m.HistoryScreen })),
 );
+const GuideScreen = lazy(() =>
+  import('../ui/screens/GuideScreen.tsx').then((m) => ({ default: m.GuideScreen })),
+);
 
 type Screen =
   | { readonly name: 'menu' }
   | { readonly name: 'setup' }
   | { readonly name: 'settings' }
   | { readonly name: 'history' }
+  | { readonly name: 'guide' }
   | { readonly name: 'table'; readonly controller: GameController; readonly setup: GameSetup };
 
 function storage(): Storage | null {
@@ -228,6 +232,9 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
           onSettings={() => {
             setScreen({ name: 'settings' });
           }}
+          onGuide={() => {
+            setScreen({ name: 'guide' });
+          }}
         />
       );
     case 'setup':
@@ -246,6 +253,12 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
       return (
         <Suspense fallback={null}>
           <HistoryScreen store={history} onBack={toMenu} />
+        </Suspense>
+      );
+    case 'guide':
+      return (
+        <Suspense fallback={null}>
+          <GuideScreen onBack={toMenu} fourColor={settings.fourColorDeck} />
         </Suspense>
       );
     case 'table':

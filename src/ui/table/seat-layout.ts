@@ -25,3 +25,19 @@ export function seatPositions(
 export function visualSlot(seat: number, userSeat: number, count: number): number {
   return (seat - userSeat + count) % count;
 }
+
+/** Centre of the table in the same percentage coordinates as the seats. */
+export function tableCenter(orientation: 'portrait' | 'landscape'): SeatPosition {
+  return { x: 50, y: orientation === 'portrait' ? 47 : 46 };
+}
+
+/** Where a seat's bet sits: on the betting line between the seat and the centre. */
+export function betPosition(seat: SeatPosition, center: SeatPosition): SeatPosition {
+  const t = 0.4;
+  return { x: seat.x + (center.x - seat.x) * t, y: seat.y + (center.y - seat.y) * t };
+}
+
+/** Where the pot sits, just above the board. */
+export function potPosition(center: SeatPosition): SeatPosition {
+  return { x: center.x, y: center.y - 11 };
+}

@@ -1,0 +1,136 @@
+.screen {
+  min-height: 100dvh;
+  padding: 0 calc(var(--space-4) + var(--safe-right)) calc(var(--space-6) + var(--safe-bottom))
+    calc(var(--space-4) + var(--safe-left));
+  background:
+    var(--texture-noise),
+    radial-gradient(
+      ellipse at 50% 0%,
+      var(--color-felt) 0%,
+      var(--color-felt-deep) 45%,
+      var(--color-room) 100%
+    );
+  background-attachment: fixed;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 720px;
+  margin: 0 auto var(--space-2);
+  padding: calc(var(--space-2) + var(--safe-top)) 0 var(--space-2);
+  background: rgb(4 30 25 / 97%);
+  box-shadow: 0 8px 12px -8px rgb(0 0 0 / 60%);
+}
+
+.back {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  background: var(--color-glass);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-gold-light);
+}
+
+.content {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.intro {
+  margin: var(--space-2) 0 var(--space-4);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.section {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  background: var(--color-glass-strong);
+}
+
+.section h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.05rem;
+  color: var(--color-gold-light);
+}
+
+.section p {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--color-text);
+}
+
+.rankings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+
+.ranking {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  counter-increment: rank;
+}
+
+.rankingText {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.rankingText h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.rankingText h3::before {
+  content: counter(rank) '. ';
+  color: var(--color-gold);
+}
+
+.rankingText p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.cards {
+  display: flex;
+  gap: 3px;
+}
+
+.note {
+  margin-top: var(--space-3) !important;
+  font-size: 0.85rem;
+  color: var(--color-text-muted) !important;
+}
+
+.legal {
+  margin: var(--space-4) 0 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}

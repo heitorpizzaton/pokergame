@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import type { UserClock } from '../../app/game-controller.ts';
 import { strings } from '../../i18n/index.ts';
+import { vibrate } from '../audio/haptics.ts';
 import styles from './UserTimer.module.css';
 
 interface Props {
   readonly clock: UserClock;
   readonly haptics: boolean;
+  /** Called once when the last 5 seconds start (the warning sound). */
+  readonly onWarning?: (() => void) | undefined;
 }
 
 const WARNING_MS = 5_000;
 
 /**
  * Circular countdown around the user's avatar and a separate time-bank bar (AGENTS.md §9).
- * Turns red in the last 5 seconds, with a gentle vibration when haptics are on.
+ * Turns red in the last 5 seconds, with a warning sound and a gentle vibration when enabled.
  */
-export function UserTimer({ clock, haptics }: Props) {
+export function UserTimer({ clock, haptics, onWarning }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const warned = useRef(false);
   useEffect(() => {
@@ -39,9 +42,10 @@ export function UserTimer({ clock, haptics }: Props) {
   useEffect(() => {
     if (warning && !warned.current) {
       warned.current = true;
-      if (haptics && 'vibrate' in navigator) navigator.vibrate(80);
+      vibrate('timerWarning', haptics);
+      onWarning?.();
     }
-  }, [warning, haptics]);
+  }, [warning, haptics, onWarning]);
 
   const fraction = inBank ? 0 : actionLeft / clock.actionMs;
   const r = 20;
