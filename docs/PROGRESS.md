@@ -16,8 +16,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 - [x] Manual `test:long` workflow
 - [x] Placeholder page (pt-BR, via i18n, with the entertainment disclaimer)
 - [x] `vite-plugin-pwa` wired up (manifest, service worker, original icons), verified by e2e
-- [~] GitHub Pages deploy workflow: written and merged; **blocked** until the owner enables Pages (see `HANDOFF.md`)
-- [~] **Accept:** `npm run check` is green ✅; the deployed placeholder page loads ⏳ (blocked on Pages being enabled)
+- [x] GitHub Pages deploy workflow: live at https://heitorpizzaton.github.io/pokergame/ (the `smoke` job checks the page, manifest and service worker)
+- [x] **Accept:** `npm run check` is green; the deployed placeholder page loads (deploy run 6, 2026-09-25)
 
 ## Phase 1 — Core
 
