@@ -137,7 +137,7 @@ describe('draw odds and outs', () => {
     const outs = new Set(odds.outs);
     for (const heart of c('2h3h4h5h6h8h9hThJh')) expect(outs.has(heart)).toBe(true);
     for (const over of c('AsAdAcKsKdKc')) expect(outs.has(over)).toBe(true);
-    for (const pairsBoard of c('QsQdQc7s7d7c2s2d2h')) expect(outs.has(pairsBoard)).toBe(false);
+    for (const pairsBoard of c('QsQdQc7s7d7c2s2d')) expect(outs.has(pairsBoard)).toBe(false);
     expect(odds.outs).toHaveLength(15);
     expect(odds.improveNextCard).toBeCloseTo(15 / 47, 12);
     expect(odds.category).toBe(HandCategory.HighCard);

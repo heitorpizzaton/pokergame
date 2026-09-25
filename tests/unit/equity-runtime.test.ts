@@ -59,8 +59,9 @@ describe('runEquity strategy', () => {
     let cancelled = false;
     const result = await runEquity({ hero: c('AhKh'), board: [], opponents: 5 }, new SeededRng(4), {
       chunkSize: 100,
-      yieldControl: async () => {
+      yieldControl: () => {
         cancelled = true;
+        return Promise.resolve();
       },
       isCancelled: () => cancelled,
     });
