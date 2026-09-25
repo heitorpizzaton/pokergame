@@ -4,6 +4,26 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 12) — Claude — shuffle test significance fix
+
+**Branch:** `fix/shuffle-test-family-alpha`.
+
+### Done
+
+- `tests/statistical/shuffle-fairness.test.ts` now runs at a family-wise alpha of 0.001, Bonferroni-corrected across its five checks (ADR-027). CI had failed once on a pocket-pair count 3.6 σ high. Two follow-up samples of 2,000,000 shuffles each showed no bias (pocket-pair z = 0.54 and 0.60).
+
+### Exact next step
+
+- Continue from the entry below.
+
+### Verify
+
+```bash
+npx vitest run tests/statistical/shuffle-fairness.test.ts
+```
+
+---
+
 ## 2026-09-25 (session 1, part 10) — Claude — Phase 7 polish
 
 **Branch:** `feat/phase-7-polish` ([PR #12](https://github.com/heitorpizzaton/pokergame/pull/12)).
