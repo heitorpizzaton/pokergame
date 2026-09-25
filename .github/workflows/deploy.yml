@@ -1,0 +1,73 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - run: npm ci
+      - run: npm run build
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  smoke:
+    name: Deployed page loads
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch the deployed page and manifest
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsSL "$PAGE_URL" -o index.html && grep -q '<div id="root">' index.html; then
+              break
+            fi
+            echo "Attempt $attempt: page not ready yet"; sleep 10
+          done
+          grep -q '<div id="root">' index.html
+          grep -q 'lang="pt-BR"' index.html
+          curl -fsSL "${PAGE_URL%/}/manifest.webmanifest" | grep -q '"name":"Mesa Viva"'
+          curl -fsSI "${PAGE_URL%/}/sw.js" | head -1
+          echo "Deployed page OK: $PAGE_URL"
