@@ -4,6 +4,33 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 4) — Claude — Phase 0 accepted
+
+**Branch:** `docs/phase-0-accepted`.
+
+### Done
+
+- The owner made the repository public and set **Settings → Pages → Source: GitHub Actions**.
+- **Deploy to GitHub Pages** run 6 on `main` is green in all three jobs. The `smoke` job fetched https://heitorpizzaton.github.io/pokergame/ (HTTP 200, `lang="pt-BR"`), the manifest and `sw.js`. **Phase 0 is fully accepted**; `PROGRESS.md` is updated.
+- ADR-005 now records that enabling Pages takes one manual step by the owner.
+
+### Exact next step
+
+Unchanged from part 3: start Phase 2 on `feat/phase-2-engine` (`docs/RULES.md` first, then the `PlayerView` / `Action` contract outside `src/core/engine`, then the state machine with scenario tests first).
+
+### Known issues
+
+- The Claude cloud sandbox cannot reach `*.github.io` (egress policy), so verify the live site through the workflow's `smoke` job, not with local `curl`.
+
+### Verify
+
+```sh
+npm ci
+npm run check
+```
+
+---
+
 ## 2026-09-25 (session 1, part 3) — Claude — Phase 1 core
 
 **Branch:** `feat/phase-1-core` (PR to `main`; merged only with CI green). Also merged PR #4, which restricts the Playwright Chromium fallback to local runs so CI always uses the official browser.

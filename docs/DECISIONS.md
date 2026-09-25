@@ -69,7 +69,7 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 - **Context:** Section 3 requires a deploy to GitHub Pages on every push to `main`, and Phase 0 acceptance requires that the deployed page loads.
 - **Decision:** `.github/workflows/deploy.yml` runs on every push to `main` (and on demand). It gets the base path from `actions/configure-pages` and passes it to Vite as `BASE_PATH`, deploys with `actions/deploy-pages`, then runs a `smoke` job that fetches the deployed page, the manifest and the service worker. `configure-pages` runs with `enablement: true` so Pages is switched on automatically when the token allows it.
 - **Alternatives considered:** a deploy job inside `ci.yml` gated on the test jobs, rejected to keep CI (which also runs on pull requests) free of `pages: write` and `id-token: write` permissions. `main` only receives changes that are already green under the collaboration protocol. A relative `base: './'`, rejected because the service worker scope and manifest `start_url` need an absolute path.
-- **Consequences:** local builds use `/` as the base; only the Pages build uses `/<repo>/`. Client-side routing (Phase 4) must respect `import.meta.env.BASE_URL`.
+- **Consequences:** `enablement: true` cannot create the Pages site with the workflow token ("Resource not accessible by integration"). The owner had to set **Settings → Pages → Source: GitHub Actions** once by hand; after that, deploys work unattended. Local builds use `/` as the base; only the Pages build uses `/<repo>/`. Client-side routing (Phase 4) must respect `import.meta.env.BASE_URL`.
 
 ## ADR-004 — End-to-end tests run on Chromium at five viewports
 
