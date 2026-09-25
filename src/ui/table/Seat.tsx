@@ -26,6 +26,8 @@ interface Props {
   readonly clock?: UserClock | null;
   readonly haptics?: boolean;
   readonly away?: boolean;
+  /** The game is paused: the countdown freezes. */
+  readonly paused?: boolean;
   /** Plays the timer warning sound (AGENTS.md §9). */
   readonly onTimerWarning?: () => void;
   /** Deal animation: delay of each hole card and the dealer's offset (container units). */
@@ -141,7 +143,9 @@ export function Seat(props: Props) {
         </span>
         {props.clock && (
           <UserTimer
+            key={props.clock.startedAt}
             clock={props.clock}
+            paused={props.paused ?? false}
             haptics={props.haptics ?? false}
             onWarning={props.onTimerWarning}
           />

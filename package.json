@@ -41,7 +41,7 @@
     "test:long": "vitest run --config vitest.long.config.ts",
     "bench:eval": "node scripts/bench-eval.ts",
     "sim": "node scripts/sim.ts",
-    "e2e": "vite build --mode e2e && playwright test",
+    "e2e": "vite build --mode e2e && playwright test && playwright test --config playwright.perf.config.ts",
     "budget": "node scripts/check-bundle.ts",
     "visual": "vite build --mode e2e && playwright test --config playwright.visual.config.ts",
     "lint": "eslint . --max-warnings 0",

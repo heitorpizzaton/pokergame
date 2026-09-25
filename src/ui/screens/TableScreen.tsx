@@ -34,6 +34,10 @@ interface Props {
   readonly onPlayAgain: () => void;
 }
 
+function playTimerWarning(): void {
+  sound.play('timerWarning');
+}
+
 /** Delay between hole cards in the deal animation (the controller waits for it). */
 const DEAL_STAGGER_MS = 70;
 /** Board cards turn over after the burn card. */
@@ -222,7 +226,8 @@ export function TableScreen({
               clock={seat.seat === userSeat ? snap.userClock : null}
               haptics={settings.haptics}
               away={seat.seat === userSeat && snap.away}
-              onTimerWarning={() => sound.play('timerWarning')}
+              paused={snap.paused}
+              onTimerWarning={playTimerWarning}
               deal={{
                 delays: dealDelays(seat.seat),
                 fromX: dealer.x - pos.x,

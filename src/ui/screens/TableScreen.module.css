@@ -85,13 +85,18 @@
   container-type: size;
 }
 
-/* Wooden rail (border box) around the felt (padding box), with a gold inlay. */
+/*
+ * Wooden rail (border box) around the felt (padding box), with a gold inlay. Depth comes from
+ * gradients rather than large blurred box-shadows, which are costly to repaint on every frame
+ * (AGENTS.md §12: no main-thread task over 50 ms).
+ */
 .felt {
   position: absolute;
   inset: 11% 13% 13%;
   border: 14px solid transparent;
   border-radius: 46% / 36%;
   background:
+    radial-gradient(ellipse at 50% 45%, transparent 55%, rgb(0 0 0 / 45%) 100%) padding-box,
     var(--texture-noise) padding-box,
     radial-gradient(
         ellipse at 50% 42%,
@@ -110,9 +115,17 @@
       border-box;
   box-shadow:
     inset 0 0 0 1px rgb(243 217 139 / 45%),
-    inset 0 0 50px rgb(0 0 0 / 55%),
-    0 0 0 1px rgb(0 0 0 / 60%),
-    var(--shadow-deep);
+    0 0 0 1px rgb(0 0 0 / 60%);
+}
+
+/* The table's shadow on the floor: a soft radial gradient, painted once. */
+.felt::before {
+  content: '';
+  position: absolute;
+  inset: -12% -8% -18%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 55%, rgb(0 0 0 / 55%) 40%, transparent 70%);
 }
 
 .landscape .felt {
