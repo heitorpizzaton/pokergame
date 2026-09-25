@@ -21,7 +21,10 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
   - Seeding the shuffles: this would no longer test the production RNG.
   - Retrying on failure: this hides real bias.
   - Leaving it as is: about one spurious red CI run in 200.
-- **Consequences:** a perfect RNG fails at most 0.1% of runs. A bias of about 4 standard deviations in any single frequency still fails every time. The long workflow (10M deals) keeps its own 99.9% intervals.
+- **Consequences:**
+  - A perfect RNG fails at most 0.1% of runs.
+  - Power stays high: a true shift of 6 standard deviations in a frequency is still caught about 99% of the time, against 99.7% before. For pocket pairs at 200,000 shuffles, 6 standard deviations is about 0.32 percentage points.
+  - The long workflow (10M deals) keeps its own 99.9% intervals.
 
 ## ADR-026 — Deck commitment ("Prova de justiça")
 
