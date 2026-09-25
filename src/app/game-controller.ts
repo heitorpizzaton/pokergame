@@ -1,3 +1,4 @@
+import { STYLES, type StyleId } from '../ai/index.ts';
 import { decideSimple } from '../ai/simple/simple-npc.ts';
 import {
   EngineError,
@@ -9,6 +10,7 @@ import {
 import type { HandValue } from '../core/eval/index.ts';
 import type { Rng } from '../core/rng/index.ts';
 import type { ActionRecord, PlayerAction, PlayerView } from '../core/view/index.ts';
+import type { NpcDriver } from './npc-driver.ts';
 import { type SessionStats, SessionStatsTracker } from './session-stats.ts';
 
 export type Speed = 'normal' | 'fast' | 'instant';
@@ -70,6 +72,10 @@ export interface ControllerOptions {
   readonly scheduler?: Scheduler;
   readonly speed?: Speed;
   readonly userSeat?: number;
+  /** NPC decisions; defaults to the simple rule-based heuristic. */
+  readonly driver?: NpcDriver;
+  /** Style of each seat (null for the user), for style-dependent behaviour like showing. */
+  readonly styles?: readonly (StyleId | null)[];
 }
 
 const THINKING_MS: Record<Speed, readonly [number, number]> = {
@@ -91,6 +97,9 @@ const MAX_THINKING_MS = 1500;
 export class GameController {
   readonly #engine: PokerEngine;
   readonly #npcRng: Rng;
+  readonly #driver: NpcDriver;
+  readonly #styles: readonly (StyleId | null)[];
+  #decisionToken = 0;
   readonly #scheduler: Scheduler;
   readonly #userSeat: number;
   readonly #stats: SessionStatsTracker;
@@ -113,6 +122,12 @@ export class GameController {
   constructor(options: ControllerOptions) {
     this.#engine = PokerEngine.create(options.config, options.deckRng);
     this.#npcRng = options.npcRng;
+    this.#driver = options.driver ?? {
+      decide: (_seat, view) => decideSimple(view, options.npcRng),
+      observeHandEnd: () => undefined,
+      dispose: () => undefined,
+    };
+    this.#styles = options.styles ?? [];
     this.#scheduler = options.scheduler ?? browserScheduler;
     this.#speed = options.speed ?? 'normal';
     this.#userSeat = options.userSeat ?? 0;
@@ -163,6 +178,7 @@ export class GameController {
 
   pause(): void {
     this.#paused = true;
+    this.#decisionToken++;
     this.#clearTimer();
     this.#publish();
   }
@@ -220,6 +236,7 @@ export class GameController {
   /** Stops scheduling (when the table unmounts); {@link start} picks up where it left off. */
   suspend(): void {
     this.#suspended = true;
+    this.#decisionToken++;
     this.#clearTimer();
   }
 
@@ -281,12 +298,53 @@ export class GameController {
 
     this.#phase = this.#watching ? 'watching' : 'npcTurn';
     this.#publish();
+    this.#runNpcTurn(seat);
+  }
+
+  /**
+   * Asks the driver for a decision and plays it after a human-like thinking delay. If the
+   * decision is not ready within the hard cap, a cheap heuristic decides instead (AGENTS.md
+   * §8.4) and the late answer is ignored.
+   */
+  #runNpcTurn(seat: number): void {
     const view = this.#engine.viewFor(seat);
-    this.#timer = this.#scheduler.setTimeout(() => {
+    const token = ++this.#decisionToken;
+    const started = this.#scheduler.now();
+    let decided: PlayerAction | null = null;
+    let waiting = false;
+    const finish = (): void => {
+      if (token !== this.#decisionToken) return;
+      this.#decisionToken++;
       this.#timer = null;
       if (this.#suspended || this.#paused) return;
-      this.#dispatchAct(seat, decideSimple(this.#engine.viewFor(seat), this.#npcRng));
+      const action = decided ?? decideSimple(this.#engine.viewFor(seat), this.#npcRng);
+      this.#dispatchAct(seat, action);
       this.#continue();
+    };
+    const answer = this.#driver.decide(seat, view);
+    if (answer instanceof Promise) {
+      answer.then(
+        (action) => {
+          if (token !== this.#decisionToken) return;
+          decided = action;
+          if (waiting) {
+            this.#clearTimer();
+            finish();
+          }
+        },
+        () => undefined,
+      );
+    } else {
+      decided = answer;
+    }
+    this.#timer = this.#scheduler.setTimeout(() => {
+      if (decided) {
+        finish();
+        return;
+      }
+      waiting = true;
+      const remaining = Math.max(0, MAX_THINKING_MS - (this.#scheduler.now() - started));
+      this.#timer = this.#scheduler.setTimeout(finish, remaining);
     }, this.#thinkingMs(view));
   }
 
@@ -341,7 +399,29 @@ export class GameController {
       this.#phase = 'runout';
       this.#boardShown = boardBefore;
     }
-    if (hand.phase === 'complete') this.#result = resultFrom(events);
+    if (hand.phase === 'complete') {
+      this.#result = resultFrom(events);
+      this.#afterHandComplete();
+    }
+  }
+
+  /** NPCs learn from the hand; a winner without showdown may show, depending on style. */
+  #afterHandComplete(): void {
+    const hand = this.#engine.state.hand;
+    if (!hand) return;
+    const npcSeats = hand.players
+      .filter((p) => p !== null && p.seat !== this.#userSeat)
+      .map((p) => (p as { seat: number }).seat);
+    this.#driver.observeHandEnd(npcSeats.map((seat) => this.#engine.viewFor(seat)));
+    const winners = this.#result?.winners ?? [];
+    const winner = winners[0];
+    if (this.#result?.showdown || winners.length !== 1 || !winner || winner.seat === this.#userSeat)
+      return;
+    const style = this.#styles[winner.seat];
+    if (!style) return;
+    if (this.#npcRng.int(1000) < STYLES[style].showOff * 1000) {
+      this.#record(this.#engine.dispatch({ type: 'reveal', seat: winner.seat }));
+    }
   }
 
   #record(events: readonly EngineEvent[]): void {

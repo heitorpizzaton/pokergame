@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { randomStyles } from '../ai/index.ts';
 import { CryptoRng } from '../core/rng/index.ts';
 import { strings } from '../i18n/index.ts';
 import { MenuScreen } from '../ui/screens/MenuScreen.tsx';
 import { SetupScreen } from '../ui/screens/SetupScreen.tsx';
 import { TableScreen } from '../ui/screens/TableScreen.tsx';
+import { type AiWorkerLike, WorkerNpcDriver } from '../workers/ai-client.ts';
 import { GameController, type Speed } from './game-controller.ts';
+import { LocalNpcDriver, type NpcDriver, type NpcSeat } from './npc-driver.ts';
 import { pickNames } from './names.ts';
 import { type GameSetup, loadLastSetup, saveLastSetup, toEngineConfig } from './setup.ts';
 
@@ -27,14 +30,34 @@ function initialSpeed(): Speed {
   return param === 'fast' || param === 'instant' ? param : 'normal';
 }
 
+/** NPC brains in a module worker when available, otherwise in-process. */
+function createDriver(seats: readonly NpcSeat[]): NpcDriver {
+  try {
+    if (typeof Worker !== 'undefined') {
+      const worker = new Worker(new URL('../workers/ai.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+      return new WorkerNpcDriver(worker as unknown as AiWorkerLike, seats);
+    }
+  } catch {
+    // Fall through to in-process brains.
+  }
+  return new LocalNpcDriver(seats, () => new CryptoRng());
+}
+
 function createController(setup: GameSetup): GameController {
   const npcRng = new CryptoRng();
   const names = pickNames(setup.players - 1, npcRng);
+  const styles =
+    setup.opponents === 'random' ? randomStyles(setup.players - 1, npcRng) : [...setup.opponents];
+  const seats = styles.map((style, i) => ({ seat: i + 1, style }));
   return new GameController({
     config: toEngineConfig(setup, names, strings.table.you),
     deckRng: new CryptoRng(),
     npcRng,
     speed: initialSpeed(),
+    driver: createDriver(seats),
+    styles: [null, ...styles],
   });
 }
 
