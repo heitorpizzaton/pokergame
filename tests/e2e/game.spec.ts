@@ -81,7 +81,11 @@ test('plays hands using every action type', async ({ page }) => {
   await page.getByRole('button', { name: strings.setup.start }).click();
   const used = new Set<string>();
   for (let turn = 0; turn < 150 && used.size < 5; turn++) {
-    if ((await waitForTurnOrEnd(page)) === 'end') break;
+    if ((await waitForTurnOrEnd(page)) === 'end') {
+      // The user can bust before trying every action; keep going in a new game.
+      await page.getByRole('button', { name: strings.summary.playAgain }).click();
+      continue;
+    }
     const fold = page.getByTestId('act-fold');
     const call = page.getByTestId('act-call');
     const raise = page.getByTestId('act-raise');
