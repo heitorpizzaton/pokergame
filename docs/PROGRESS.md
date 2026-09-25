@@ -59,11 +59,11 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 4 — Playable UI (functional)
 
-- [ ] i18n module (`pt-BR.ts`, number formatting)
-- [ ] Menu, Setup, Table, action bar, Summary screens
-- [ ] Temporary rule-based NPC
-- [ ] Complete games playable from 2 to 9 players on mobile
-- [ ] **Accept:** e2e flows for setup, play and bust pass on mobile viewports
+- [x] i18n module (`pt-BR.ts`, number formatting, card labels, pt-BR hand names)
+- [x] Menu, Setup (2–9 players, buy-in presets and custom, blinds validation, table preview, remembered setup), Table, action bar (presets, slider, steppers, input, pre-actions), pause menu, Summary/Victory
+- [x] Temporary rule-based NPC (ADR-016)
+- [x] Complete games playable from 2 to 9 players on mobile (GameController, ADR-015)
+- [x] **Accept:** e2e flows for setup, play and bust pass on the mobile viewports (all five projects)
 
 ## Phase 5 — AI
 
