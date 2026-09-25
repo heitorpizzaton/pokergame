@@ -1,3 +1,4 @@
+import type { Card } from '../core/cards/index.ts';
 import type { EquityRequest, EquityResult } from '../core/equity/index.ts';
 import type { EquityWorkerRequest, EquityWorkerResponse } from './equity-protocol.ts';
 
@@ -30,6 +31,8 @@ export class EquityClient {
   readonly #cache = new Map<string, EquityResult>();
   #nextId = 1;
   #pending: Pending | null = null;
+  readonly #versusCache = new Map<string, readonly EquityResult[]>();
+  readonly #versusPending = new Map<number, (results: readonly EquityResult[]) => void>();
 
   constructor(worker: EquityWorkerLike) {
     this.#worker = worker;
@@ -62,6 +65,32 @@ export class EquityClient {
     });
   }
 
+  /**
+   * Exact equity of each known hand over the rest of the board (the all-in equity bar). Runs
+   * beside {@link request} without cancelling it; results are cached.
+   */
+  requestVersus(
+    hands: readonly (readonly Card[])[],
+    board: readonly Card[],
+  ): Promise<readonly EquityResult[]> {
+    const key = `${hands.map((h) => h.join(',')).join('|')}/${board.join(',')}`;
+    const cached = this.#versusCache.get(key);
+    if (cached) return Promise.resolve(cached);
+    const id = this.#nextId++;
+    return new Promise((resolve) => {
+      this.#versusPending.set(id, (results) => {
+        this.#versusCache.set(key, results);
+        resolve(results);
+      });
+      this.#worker.postMessage({
+        type: 'versus',
+        id,
+        hands: hands.map((h) => [...h]),
+        board: [...board],
+      });
+    });
+  }
+
   /** Abandons the running request, if any (its promise resolves to null). */
   cancel(): void {
     const pending = this.#pending;
@@ -77,6 +106,11 @@ export class EquityClient {
   }
 
   #receive(message: EquityWorkerResponse): void {
+    if (message.type === 'versus') {
+      this.#versusPending.get(message.id)?.(message.results);
+      this.#versusPending.delete(message.id);
+      return;
+    }
     const pending = this.#pending;
     if (pending?.id !== message.id) return;
     if (message.type === 'progress') {
