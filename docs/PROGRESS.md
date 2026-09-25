@@ -49,12 +49,13 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 3 — Equity
 
-- [ ] Exact enumerator
-- [ ] Monte Carlo engine (standard-error stopping, time cap, progressive results)
-- [ ] Equity worker, with caching and cancellation
-- [ ] Outs and draw probabilities, pot odds
-- [ ] Reference-value tests; exact vs. Monte Carlo agreement tests
-- [ ] **Accept:** every Section 7.2 reference value is met, and the two engines agree
+- [x] Exact enumerator (vs random hands within budget; hand vs hand) (ADR-013)
+- [x] Exact heads-up preflop table for the 169 classes (`npm run gen:preflop`)
+- [x] Monte Carlo engine (standard-error stopping at 0.25 pp, time cap, progressive results)
+- [x] Equity worker, with caching and cancellation (`src/workers/`)
+- [x] Outs and draw probabilities, pot odds, preflop class and percentile (ADR-014)
+- [x] Reference-value tests; exact vs. Monte Carlo agreement tests; brute-force table check in `test:long`
+- [x] **Accept:** every Section 7.2 reference value is met, and the two engines agree
 
 ## Phase 4 — Playable UI (functional)
 
