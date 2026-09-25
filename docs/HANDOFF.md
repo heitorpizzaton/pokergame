@@ -4,6 +4,53 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 7) — Claude — Phase 4 playable UI
+
+**Branch:** `feat/phase-4-ui` (built in a separate worktree while Phase 3 was generating its table; it includes the Phase 3 branch and is merged after it).
+
+### Done
+
+- `src/i18n/`: every UI string in pt-BR; `formatChips` / `formatPercent` / `formatBigBlinds` / `formatDuration`; `cardLabel` ("Ás de Espadas"); `handName` ("Full House, Reis cheios de Setes").
+- `src/app/`:
+  - `game-controller.ts` (ADR-015).
+  - Setup validation and persistence in `setup.ts`.
+  - Presets, clamp and step in `bet-sizing.ts`.
+  - VPIP, PFR, biggest pot and best hand in `session-stats.ts`.
+  - NPC names in `names.ts`.
+  - `App.tsx` handles the screens.
+- `src/ai/simple/`: temporary rule-based NPC (ADR-016).
+- `src/ui/`: Menu, Setup (with table preview), Table (oval layout, seats, board, pots, result banner, pause menu with speed and a confirmed quit), action bar with presets, slider, `−`/`+`, numeric input and pre-action checkboxes, and Summary/Victory with "Assistir até o fim" (turbo, with a skip button), "Jogar novamente" and "Menu".
+- Tests:
+  - Controller: full games with a manual clock, thinking-time bounds, pre-actions, pause, rejection of illegal actions, watch-to-end.
+  - App logic: setup, sizing, stats, the NPC never acting illegally over 150 games.
+  - pt-BR formatting and hand names.
+  - e2e on five viewports: menu/PWA, 2/6/9-player setup, form validation, a hand using every action type, bust → summary → menu. That is 40 tests, about 50 s.
+
+### Exact next step
+
+Phase 5 on `feat/phase-5-ai`:
+
+1. Style profiles and preflop ranges (from the exact preflop table blended with playability).
+2. Opponent model and range narrowing from `PlayerView` actions.
+3. Postflop equity against the estimated ranges.
+4. `ai.worker.ts`.
+5. `npm run sim` and `docs/AI.md`.
+6. Replace `decideSimple` in the controller. The brain API must take only `PlayerView` (`decide(view)`, plus `observeHandEnd(view)` for modelling).
+
+### Known issues
+
+- Visual polish (chips, animation, sounds, four-colour deck) is Phase 7. The UI is functional but plain.
+- Autosave and "Continuar partida", Settings, the odds panel, the time bank, history and rabbit hunt are Phase 6.
+
+### Verify
+
+```sh
+npm ci
+npm run check
+```
+
+---
+
 ## 2026-09-25 (session 1, part 6) — Claude — Phase 3 equity
 
 **Branch:** `feat/phase-3-equity` (PR to `main`, merged with CI green). Phase 4 is being built in parallel on `feat/phase-4-ui`.

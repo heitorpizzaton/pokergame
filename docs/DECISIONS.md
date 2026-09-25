@@ -4,6 +4,34 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-016 — Temporary rule-based NPC (Phase 4)
+
+- **Date:** 2026-09-25
+- **Context:** Phase 4 needs opponents before the full AI of Phase 5 exists.
+- **Decision:** `src/ai/simple/simple-npc.ts` decides from its `PlayerView` only.
+  - **Preflop:** Chen formula, with thresholds by position and whether the pot is unopened; push/fold at 12 BB or less.
+  - **Postflop:** plays made hands above the board, draws and a little bluffing, with random mixing from its own RNG stream.
+  - **Legality:** a test runs 150 NPC-only games (2–9 players) and checks that every action is legal and every game finishes.
+- **Alternatives considered:** calling-station bots, rejected because they make the e2e flows and manual play unrealistic.
+- **Consequences:** Phase 5 replaces it behind the same `(view, rng) => PlayerAction` shape. The controller is the only caller.
+
+## ADR-015 — UI architecture: a GameController with an external store
+
+- **Date:** 2026-09-25
+- **Context:** Section 4.1 keeps poker logic out of React. Section 3 suggests Zustand "or equivalent" for UI state.
+- **Decision:**
+  - **`src/app/game-controller.ts`** drives a game: it dispatches engine commands, schedules NPC turns with human-like thinking time (§8.4: 350–1,200 ms normal, 120–400 ms fast, never above 1.5 s), reveals all-in runouts one street at a time, pauses on hand results, applies pre-actions, and tracks session stats.
+  - **Rendering:** the controller exposes an immutable snapshot through `subscribe`/`getSnapshot`, which React reads with `useSyncExternalStore`. No extra state library is needed yet.
+  - **Scheduler:** time is injected (`Scheduler`), so unit tests run whole games with a manual clock.
+  - **Speed override:** `?speed=instant` (or `fast`) sets the speed for end-to-end tests.
+  - **Bet-sizing presets:** preflop presets are multiples of the bet faced (the big blind when unopened), so 2.5×/3×/4× stay useful against raises. Postflop presets are pot fractions: a raise of fraction `f` is `currentBet + f × (pot + toCall)`.
+  - **Pre-actions:** a pre-action is dropped if the street changes before the user's turn. "Passar" is dropped when a bet appears. "Passar/Desistir" and "Pagar qualquer valor" use the engine's legal actions when the turn arrives.
+  - **Seat layout:** seats sit on an ellipse, with the user always in visual slot 0 at the bottom centre. Portrait is the primary layout; landscape and desktop use a wider ellipse.
+- **Alternatives considered:** Zustand, which adds a dependency with no benefit while a single controller owns the state; React-owned game state, rejected because it would put game flow in components.
+- **Consequences:** Phase 6 features (odds panel, time bank, history, autosave) hook into the controller. Phase 7 animations can be driven from the events the controller already receives.
+
+---
+
 ## ADR-014 — Definition of outs and improvement
 
 - **Date:** 2026-09-25
