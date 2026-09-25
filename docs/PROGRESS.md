@@ -89,15 +89,15 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 7 — Polish
 
-- [ ] Full visual design and design tokens
-- [ ] Event-driven animations in the correct dealing order
-- [ ] Sound and haptics
-- [ ] "Como jogar" guide
-- [ ] Accessibility
-- [ ] PWA and performance budgets (Section 12)
-- [ ] Visual regression baselines
-- [ ] `docs/QA.md` manual checklist completed
-- [ ] **Accept:** Section 12 budgets met; baselines approved; QA checklist complete
+- [x] Full visual design and design tokens (ADR-024)
+- [x] Event-driven animations in the correct dealing order (ADR-025)
+- [x] Sound and haptics (synthesized, ADR-025)
+- [x] "Como jogar" guide
+- [x] Accessibility (axe clean on all screens and viewports, live region, labelled cards)
+- [x] PWA and performance budgets (Section 12): Lighthouse mobile 98/100/100, initial JS 111 KB gzipped, no long tasks in play, offline play
+- [x] Visual regression baselines (generated in CI, ADR-023)
+- [x] `docs/QA.md` manual checklist, with every agent-verifiable item done
+- [~] **Accept:** Section 12 budgets met; baselines generated, **owner approval pending**; QA checklist complete except the owner-only on-device items in `docs/QA.md`
 
 ## Phase 8 (optional) — Fairness proof
 
