@@ -39,6 +39,7 @@
     "test:watch": "vitest",
     "test:long": "vitest run --config vitest.long.config.ts",
     "bench:eval": "node scripts/bench-eval.ts",
+    "sim": "node scripts/sim.ts",
     "e2e": "vite build && playwright test",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
