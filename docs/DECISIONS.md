@@ -4,6 +4,38 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-021 — End-to-end speed and timer overrides in the URL
+
+- **Date:** 2026-09-25
+- **Context:** e2e flows play several hands and wait for the timer to run out. At the normal NPC speed (350–1,200 ms per decision) and the default 20 s timer plus 30 s bank, the tests would take minutes and flake.
+- **Decision:** `App` reads `?speed=fast|instant` and `?timerMs=…&bankMs=…` once at load. The values override the NPC speed and the user's timer for that page. They are never saved to settings or the autosave. e2e helpers poll with a time deadline and compare hand numbers with `>=`, because instant play can skip past a polled value.
+- **Alternatives considered:** a debug build flag (a second build to maintain); injecting a fake clock through Playwright (hides real scheduler behaviour).
+- **Consequences:** anyone can open the site with `?speed=instant`. That is harmless: it only speeds up NPCs in a free game. No override can reveal hidden information or change the deck.
+
+## ADR-020 — Autosave at hand boundaries in `localStorage`
+
+- **Date:** 2026-09-25
+- **Context:** Section 5.8 requires saving between hands, never storing the deck of a hand in progress, and offering "Continuar partida".
+- **Decision:** `GameController` calls `onSave(SavedGame)` after each hand ends (`state.hand === null`, so no deck exists). `SavedGame` (version 1) holds the engine snapshot, session stats, NPC styles, the user's seat, time bank, hands played and start time. It is stored under `mesa-viva:autosave`. `loadAutosave` rejects corrupt JSON, other versions and any save with a hand in progress. Quitting from the pause menu keeps the save (the confirmation text says so). Game over clears it, and "Nova partida" replaces it on the first saved hand. A resumed game uses a fresh `CryptoRng`, and NPC brains start with empty opponent models.
+- **Alternatives considered:** IndexedDB (async and heavier for one small record); saving mid-hand without the deck (the remaining cards would have to be re-dealt, which changes the hand).
+- **Consequences:** closing the app mid-hand loses only that hand. The user resumes at the next hand with the stacks from the last completed hand. Any change to `SavedGame` must bump `version`, and old saves are then ignored.
+
+## ADR-019 — Hand history: public-information records in IndexedDB, PokerStars-style export
+
+- **Date:** 2026-09-25
+- **Context:** Section 10.2 requires optional history (off by default) with a replayer and export. Records must not leak NPC hole cards that were never shown.
+- **Decision:** the controller emits `CompletedHand` with the events redacted for the user's seat (`redactEvent`), so only shown cards survive. `buildHandRecord` turns it into a `HandRecord` (seats, blinds, the user's hole cards, board, actions by street, showdown, awards). `IndexedDbHistoryStore` saves records in database `mesa-viva`, store `hands`, and only when the setting is on. `MemoryHistoryStore` backs tests and browsers without IndexedDB. Export is PokerStars-style text in English (`toPokerStarsText`, `englishHandName`), because hand-review tools parse that format. The UI stays pt-BR. `replayFrames` rebuilds the stacks, pot and board step by step for the replayer.
+- **Alternatives considered:** storing raw engine events (larger, and the replayer would need the engine); JSON export only (no tool can read it).
+- **Consequences:** the replayer never needs `src/core/engine`. The export text is data, not UI, so the i18n rule does not apply to it.
+
+## ADR-018 — Settings store and time bank semantics
+
+- **Date:** 2026-09-25
+- **Context:** Sections 9 and 11 define the settings, the action timer (off, 15, 20 or 30 s) and a 30 s time bank that refills by 5 s every 10 hands, up to 60 s.
+- **Decision:** `SettingsStore` keeps validated settings in `localStorage` (`mesa-viva:settings`). Each field is checked on load, and any invalid value falls back to its default. It has `subscribe`/`get` for `useSyncExternalStore`. The controller owns the clock: the bank is spent only for time beyond the action timer, and pausing shifts the clock so paused time is free. When both run out, the engine's `timeoutAction` checks or folds and the user is marked "Ausente". While away, the user auto-checks or folds until they press "Voltar". Timer changes apply from the next turn.
+- **Alternatives considered:** a UI-side countdown (would drift from the controller and break under pause); Zustand (unneeded for one small store).
+- **Consequences:** `UserClock` in the snapshot is the single source for the ring and the bank bar. Tests drive the clock with `FakeScheduler`.
+
 ## ADR-017 — NPC AI architecture
 
 - **Date:** 2026-09-25

@@ -1,17 +1,20 @@
 import { STYLES, type StyleId } from '../ai/index.ts';
 import { decideSimple } from '../ai/simple/simple-npc.ts';
+import type { Card } from '../core/cards/index.ts';
 import {
   EngineError,
   type EngineEvent,
   type GameConfig,
+  type GameState,
   PokerEngine,
   redactEvent,
+  timeoutAction,
 } from '../core/engine/index.ts';
 import type { HandValue } from '../core/eval/index.ts';
 import type { Rng } from '../core/rng/index.ts';
 import type { ActionRecord, PlayerAction, PlayerView } from '../core/view/index.ts';
 import type { NpcDriver } from './npc-driver.ts';
-import { type SessionStats, SessionStatsTracker } from './session-stats.ts';
+import { type SavedStats, type SessionStats, SessionStatsTracker } from './session-stats.ts';
 
 export type Speed = 'normal' | 'fast' | 'instant';
 export type PreAction = 'checkFold' | 'callAny' | 'check';
@@ -42,6 +45,13 @@ export interface HandResult {
   readonly showdown: boolean;
 }
 
+/** The user's clock for the current turn (AGENTS.md §9). Times use the scheduler's clock. */
+export interface UserClock {
+  readonly startedAt: number;
+  readonly actionMs: number;
+  readonly bankMs: number;
+}
+
 export interface TableSnapshot {
   readonly version: number;
   readonly phase: TablePhase;
@@ -61,6 +71,47 @@ export interface TableSnapshot {
   readonly playerCount: number;
   readonly winnerSeat: number | null;
   readonly endedAt: number | null;
+  /** Running clock for the user's turn, or null (no timer, or not the user's turn). */
+  readonly userClock: UserClock | null;
+  /** Time bank left, in milliseconds. */
+  readonly timeBankMs: number;
+  /** Marked away after a timeout: auto check/fold until "Voltar" (AGENTS.md §9). */
+  readonly away: boolean;
+  /** Rabbit hunt state for the finished hand (AGENTS.md §10.1). */
+  readonly rabbit: 'available' | readonly Card[] | null;
+  /** NPC styles by seat (null for the user). */
+  readonly styles: readonly (StyleId | null)[];
+}
+
+/** Everything needed to resume a game at a hand boundary (never a deck in progress). */
+export interface SavedGame {
+  readonly version: 1;
+  readonly state: GameState;
+  readonly stats: SavedStats;
+  readonly styles: readonly (StyleId | null)[];
+  readonly userSeat: number;
+  readonly timeBankMs: number;
+  readonly userHands: number;
+  readonly startedAt: number;
+}
+
+export interface TimerSettings {
+  /** Per-action timer in ms, or null when the timer is off. */
+  readonly actionMs: number | null;
+  /** Initial time bank in ms (AGENTS.md §9: 30 s). */
+  readonly bankMs: number;
+}
+
+export interface CompletedHand {
+  readonly handNumber: number;
+  readonly startedAt: number;
+  readonly endedAt: number;
+  readonly config: GameConfig;
+  readonly userSeat: number;
+  readonly userHole: readonly Card[] | null;
+  readonly names: readonly string[];
+  /** Events of the hand as the user saw them (other players' hidden cards redacted). */
+  readonly events: readonly { readonly at: number; readonly event: EngineEvent }[];
 }
 
 export interface ControllerOptions {
@@ -76,6 +127,16 @@ export interface ControllerOptions {
   readonly driver?: NpcDriver;
   /** Style of each seat (null for the user), for style-dependent behaviour like showing. */
   readonly styles?: readonly (StyleId | null)[];
+  readonly timer?: TimerSettings;
+  readonly rabbitHunt?: boolean;
+  /** Resume a saved game instead of starting a new one. */
+  readonly restore?: SavedGame;
+  /** Called between hands with a save of the game (autosave, AGENTS.md §5.8). */
+  readonly onSave?: (save: SavedGame) => void;
+  /** Called when the game ends or the user busts (the autosave is discarded). */
+  readonly onGameOver?: () => void;
+  /** Called with each finished hand (hand history, AGENTS.md §10.2). */
+  readonly onHandComplete?: (hand: CompletedHand) => void;
 }
 
 const THINKING_MS: Record<Speed, readonly [number, number]> = {
@@ -85,27 +146,35 @@ const THINKING_MS: Record<Speed, readonly [number, number]> = {
 };
 const RUNOUT_STREET_MS: Record<Speed, number> = { normal: 1100, fast: 500, instant: 0 };
 const RESULT_MS: Record<Speed, number> = { normal: 2600, fast: 1400, instant: 0 };
+const AWAY_ACTION_MS: Record<Speed, number> = { normal: 500, fast: 250, instant: 0 };
 /** AGENTS.md §8.4: NPC thinking time is never above 1.5 s. */
 const MAX_THINKING_MS = 1500;
+/** AGENTS.md §9: +5 s every 10 hands, up to 60 s. */
+const BANK_REFILL_MS = 5_000;
+const BANK_REFILL_EVERY = 10;
+const BANK_MAX_MS = 60_000;
 
 /**
  * Drives a game for the UI: deals hands, runs NPC turns with human-like thinking time, paces
- * all-in runouts, applies pre-actions, and tracks session stats. It holds no poker rules of its
- * own (those live in the engine) and exposes an immutable snapshot for React
- * (`useSyncExternalStore`).
+ * all-in runouts, applies pre-actions, runs the user's timer and time bank, and tracks session
+ * stats. It holds no poker rules of its own (those live in the engine) and exposes an immutable
+ * snapshot for React (`useSyncExternalStore`).
  */
 export class GameController {
   readonly #engine: PokerEngine;
   readonly #npcRng: Rng;
   readonly #driver: NpcDriver;
   readonly #styles: readonly (StyleId | null)[];
-  #decisionToken = 0;
   readonly #scheduler: Scheduler;
   readonly #userSeat: number;
   readonly #stats: SessionStatsTracker;
   readonly #listeners = new Set<() => void>();
+  readonly #options: ControllerOptions;
+  readonly #startedAt: number;
+  #decisionToken = 0;
   #speed: Speed;
   #paused = false;
+  #pausedAt = 0;
   #suspended = false;
   #started = false;
   #timer: unknown = null;
@@ -116,22 +185,41 @@ export class GameController {
   #preAction: { kind: PreAction; street: string | null } | null = null;
   #watching = false;
   #endedAt: number | null = null;
+  #timerSettings: TimerSettings;
+  #timeBankMs: number;
+  #userHands: number;
+  #userClock: UserClock | null = null;
+  #away = false;
+  #rabbitEnabled: boolean;
+  #rabbit: 'available' | readonly Card[] | null = null;
+  #handLog: { at: number; event: EngineEvent }[] = [];
+  #handStartedAt = 0;
+  #gameOverNotified = false;
   #snapshot: TableSnapshot;
   #version = 0;
 
   constructor(options: ControllerOptions) {
-    this.#engine = PokerEngine.create(options.config, options.deckRng);
+    this.#options = options;
+    this.#scheduler = options.scheduler ?? browserScheduler;
+    const saved = options.restore;
+    this.#engine = saved
+      ? PokerEngine.restore(saved.state, options.deckRng)
+      : PokerEngine.create(options.config, options.deckRng);
     this.#npcRng = options.npcRng;
     this.#driver = options.driver ?? {
       decide: (_seat, view) => decideSimple(view, options.npcRng),
       observeHandEnd: () => undefined,
       dispose: () => undefined,
     };
-    this.#styles = options.styles ?? [];
-    this.#scheduler = options.scheduler ?? browserScheduler;
+    this.#styles = saved?.styles ?? options.styles ?? [];
     this.#speed = options.speed ?? 'normal';
-    this.#userSeat = options.userSeat ?? 0;
-    this.#stats = new SessionStatsTracker(this.#userSeat, this.#scheduler.now());
+    this.#userSeat = saved?.userSeat ?? options.userSeat ?? 0;
+    this.#startedAt = saved?.startedAt ?? this.#scheduler.now();
+    this.#stats = new SessionStatsTracker(this.#userSeat, this.#startedAt, saved?.stats);
+    this.#timerSettings = options.timer ?? { actionMs: null, bankMs: 30_000 };
+    this.#timeBankMs = saved?.timeBankMs ?? this.#timerSettings.bankMs;
+    this.#userHands = saved?.userHands ?? 0;
+    this.#rabbitEnabled = options.rabbitHunt ?? false;
     this.#snapshot = this.#buildSnapshot();
   }
 
@@ -166,6 +254,7 @@ export class GameController {
       if (error instanceof EngineError) return false;
       throw error;
     }
+    this.#stopUserClock();
     this.#preAction = null;
     this.#continue();
     return true;
@@ -176,8 +265,17 @@ export class GameController {
     this.#publish();
   }
 
+  /** "Voltar": the user is back after timing out. */
+  setAway(away: boolean): void {
+    this.#away = away;
+    this.#publish();
+    if (!away) this.#continue();
+  }
+
   pause(): void {
+    if (this.#paused) return;
     this.#paused = true;
+    this.#pausedAt = this.#scheduler.now();
     this.#decisionToken++;
     this.#clearTimer();
     this.#publish();
@@ -186,6 +284,11 @@ export class GameController {
   resume(): void {
     if (!this.#paused) return;
     this.#paused = false;
+    if (this.#userClock) {
+      // The clock does not run while paused.
+      const pausedFor = this.#scheduler.now() - this.#pausedAt;
+      this.#userClock = { ...this.#userClock, startedAt: this.#userClock.startedAt + pausedFor };
+    }
     this.#publish();
     this.#continue();
   }
@@ -193,6 +296,26 @@ export class GameController {
   setSpeed(speed: Speed): void {
     this.#speed = speed;
     this.#publish();
+  }
+
+  setTimer(timer: TimerSettings): void {
+    this.#timerSettings = timer;
+  }
+
+  setRabbitHunt(enabled: boolean): void {
+    this.#rabbitEnabled = enabled;
+  }
+
+  setAutoMuck(autoMuck: boolean): void {
+    this.#engine.setAutoMuck(this.#userSeat, autoMuck);
+  }
+
+  /** Reveals the cards that would have come (AGENTS.md §10.1); keeps the result on screen. */
+  revealRabbit(): void {
+    if (this.#rabbit !== 'available' || this.#phase !== 'handResult') return;
+    this.#rabbit = this.#engine.rabbitHunt();
+    this.#clearTimer();
+    this.#showResult();
   }
 
   /** Skips the wait after a hand or during a runout ("toque para continuar"). */
@@ -240,6 +363,12 @@ export class GameController {
     this.#clearTimer();
   }
 
+  dispose(): void {
+    this.suspend();
+    this.#driver.dispose();
+    this.#listeners.clear();
+  }
+
   // ---- Flow ---------------------------------------------------------------------------
 
   #startHand(): void {
@@ -247,11 +376,22 @@ export class GameController {
       this.#finishGame();
       return;
     }
+    this.#options.onSave?.(this.#save());
     this.#lastActions = {};
     this.#result = null;
     this.#preAction = null;
+    this.#rabbit = null;
     this.#boardShown = 0;
+    this.#handLog = [];
+    this.#handStartedAt = this.#scheduler.now();
     this.#absorb(this.#engine.dispatch({ type: 'startHand' }), 0, null);
+    const hand = this.#engine.state.hand;
+    if (hand?.players[this.#userSeat]) {
+      this.#userHands++;
+      if (this.#userHands % BANK_REFILL_EVERY === 0) {
+        this.#timeBankMs = Math.min(BANK_MAX_MS, this.#timeBankMs + BANK_REFILL_MS);
+      }
+    }
     this.#continue();
   }
 
@@ -292,13 +432,68 @@ export class GameController {
         this.#continue();
         return;
       }
-      this.#publish();
+      this.#startUserTurn();
       return;
     }
 
     this.#phase = this.#watching ? 'watching' : 'npcTurn';
     this.#publish();
     this.#runNpcTurn(seat);
+  }
+
+  /** Starts (or resumes after a pause) the user's clock, or auto-acts while away. */
+  #startUserTurn(): void {
+    if (this.#away) {
+      this.#publish();
+      this.#timer = this.#scheduler.setTimeout(() => {
+        this.#timer = null;
+        this.#timeOut(false);
+      }, AWAY_ACTION_MS[this.#speed]);
+      return;
+    }
+    const actionMs = this.#timerSettings.actionMs;
+    if (actionMs === null) {
+      this.#publish();
+      return;
+    }
+    this.#userClock ??= {
+      startedAt: this.#scheduler.now(),
+      actionMs,
+      bankMs: this.#timeBankMs,
+    };
+    const clock = this.#userClock;
+    const remaining = clock.startedAt + clock.actionMs + clock.bankMs - this.#scheduler.now();
+    this.#publish();
+    this.#timer = this.#scheduler.setTimeout(
+      () => {
+        this.#timer = null;
+        this.#timeOut(true);
+      },
+      Math.max(0, remaining),
+    );
+  }
+
+  /** Timer and bank ran out (or the user is away): check if possible, otherwise fold. */
+  #timeOut(expired: boolean): void {
+    if (this.#suspended || this.#paused || this.#phase !== 'userTurn') return;
+    const legal = this.#engine.legalActions(this.#userSeat);
+    if (!legal) return;
+    if (expired) {
+      this.#timeBankMs = 0;
+      this.#away = true;
+    }
+    this.#userClock = null;
+    this.#dispatchAct(this.#userSeat, timeoutAction(legal));
+    this.#continue();
+  }
+
+  #stopUserClock(): void {
+    const clock = this.#userClock;
+    if (!clock) return;
+    const elapsed = this.#scheduler.now() - clock.startedAt;
+    const bankUsed = Math.max(0, elapsed - clock.actionMs);
+    this.#timeBankMs = Math.max(0, clock.bankMs - bankUsed);
+    this.#userClock = null;
   }
 
   /**
@@ -368,6 +563,7 @@ export class GameController {
     if (user?.eliminated && !this.#watching) {
       this.#phase = 'userOut';
       this.#endedAt ??= this.#scheduler.now();
+      this.#notifyGameOver();
       this.#publish();
       return;
     }
@@ -379,7 +575,14 @@ export class GameController {
     this.#boardShown = this.#engine.state.hand?.board.length ?? 0;
     const user = this.#engine.state.seats[this.#userSeat];
     this.#phase = user?.eliminated && !this.#watching ? 'userOut' : 'gameOver';
+    this.#notifyGameOver();
     this.#publish();
+  }
+
+  #notifyGameOver(): void {
+    if (this.#gameOverNotified) return;
+    this.#gameOverNotified = true;
+    this.#options.onGameOver?.();
   }
 
   #dispatchAct(seat: number, action: PlayerAction): void {
@@ -415,18 +618,31 @@ export class GameController {
     this.#driver.observeHandEnd(npcSeats.map((seat) => this.#engine.viewFor(seat)));
     const winners = this.#result?.winners ?? [];
     const winner = winners[0];
-    if (this.#result?.showdown || winners.length !== 1 || !winner || winner.seat === this.#userSeat)
-      return;
-    const style = this.#styles[winner.seat];
-    if (!style) return;
-    if (this.#npcRng.int(1000) < STYLES[style].showOff * 1000) {
+    const canShow =
+      !this.#result?.showdown && winners.length === 1 && winner && winner.seat !== this.#userSeat;
+    const style = winner ? this.#styles[winner.seat] : null;
+    if (canShow && style && this.#npcRng.int(1000) < STYLES[style].showOff * 1000) {
       this.#record(this.#engine.dispatch({ type: 'reveal', seat: winner.seat }));
     }
+    this.#rabbit = this.#rabbitEnabled && this.#engine.rabbitHunt() ? 'available' : null;
+    const view = this.#engine.viewFor(this.#userSeat);
+    this.#options.onHandComplete?.({
+      handNumber: hand.number,
+      startedAt: this.#handStartedAt,
+      endedAt: this.#scheduler.now(),
+      config: this.#engine.state.config,
+      userSeat: this.#userSeat,
+      userHole: view.holeCards,
+      names: this.#engine.state.seats.map((s) => s.name),
+      events: [...this.#handLog],
+    });
   }
 
   #record(events: readonly EngineEvent[]): void {
     const redacted = events.map((e) => redactEvent(e, this.#userSeat));
+    const now = this.#scheduler.now();
     for (const e of redacted) {
+      this.#handLog.push({ at: now, event: e });
       if (e.type === 'ActionTaken') this.#lastActions[e.action.seat] = e.action;
       if (e.type === 'StreetDealt') this.#lastActions = {};
     }
@@ -448,6 +664,19 @@ export class GameController {
       case 'check':
         return legal.canCheck ? { type: 'check' } : null;
     }
+  }
+
+  #save(): SavedGame {
+    return {
+      version: 1,
+      state: this.#engine.snapshot(),
+      stats: this.#stats.save(),
+      styles: this.#styles,
+      userSeat: this.#userSeat,
+      timeBankMs: this.#timeBankMs,
+      userHands: this.#userHands,
+      startedAt: this.#startedAt,
+    };
   }
 
   #nextBoardStep(): number {
@@ -490,6 +719,11 @@ export class GameController {
       playerCount: state.seats.length,
       winnerSeat: winner >= 0 ? winner : null,
       endedAt: this.#endedAt,
+      userClock: this.#phase === 'userTurn' ? this.#userClock : null,
+      timeBankMs: this.#timeBankMs,
+      away: this.#away,
+      rabbit: this.#rabbit,
+      styles: this.#styles,
     };
   }
 

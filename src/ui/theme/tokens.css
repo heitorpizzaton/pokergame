@@ -17,11 +17,14 @@
   --color-card-back-b: #3f0d16;
   --color-suit-red: #c8202f;
   --color-suit-black: #151515;
+  --color-suit-clubs: #127a3a;
+  --color-suit-diamonds: #1d5fd1;
   --color-chip: #f0d27d;
   --color-action-fold: #8c2a2a;
   --color-action-call: #1f6f5a;
   --color-action-raise: #d9b865;
   --color-error: #ff9b8f;
+  --color-timer-warning: #ff6b57;
 
   --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 

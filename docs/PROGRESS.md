@@ -79,13 +79,13 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 6 — Features
 
-- [ ] Odds panel
-- [ ] Time bank
-- [ ] Rabbit hunt
-- [ ] Hand history (IndexedDB, off by default), replayer, export
-- [ ] Settings screen
-- [ ] Autosave and resume
-- [ ] **Accept:** related e2e flows pass; history defaults to OFF and records nothing when OFF
+- [x] Odds panel (equity via the worker, outs and draw odds, pot odds with a call assessment, preflop class; collapsible, with a header toggle)
+- [x] Time bank (ring and bank bar, refill, "Ausente" and "Voltar") (ADR-018)
+- [x] Rabbit hunt (dimmed cards, on/off setting)
+- [x] Hand history (IndexedDB, off by default), replayer, PokerStars-style export (ADR-019)
+- [x] Settings screen (every Section 11 item, validated storage, "Restaurar padrões")
+- [x] Autosave and resume ("Continuar partida") (ADR-020)
+- [x] **Accept:** related e2e flows pass (`tests/e2e/features.spec.ts` on all five viewports); history defaults to OFF and records nothing when OFF
 
 ## Phase 7 — Polish
 

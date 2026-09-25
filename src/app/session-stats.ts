@@ -15,6 +15,15 @@ export interface SessionStats {
   readonly startedAt: number;
 }
 
+export interface SavedStats {
+  readonly handsPlayed: number;
+  readonly handsWon: number;
+  readonly biggestPotWon: number;
+  readonly bestHand: HandValue | null;
+  readonly vpipHands: number;
+  readonly pfrHands: number;
+}
+
 /**
  * Accumulates the user's statistics from engine events. The user's own hole cards and the board
  * are passed in at hand end (they are public to the user), so the tracker never needs hidden
@@ -35,9 +44,29 @@ export class SessionStatsTracker {
   #won = 0;
   #folded = false;
 
-  constructor(userSeat: number, startedAt: number) {
+  constructor(userSeat: number, startedAt: number, saved?: SavedStats) {
     this.#seat = userSeat;
     this.#startedAt = startedAt;
+    if (saved) {
+      this.#handsPlayed = saved.handsPlayed;
+      this.#handsWon = saved.handsWon;
+      this.#biggestPotWon = saved.biggestPotWon;
+      this.#bestHand = saved.bestHand;
+      this.#vpipHands = saved.vpipHands;
+      this.#pfrHands = saved.pfrHands;
+    }
+  }
+
+  /** Raw counters for autosave. */
+  save(): SavedStats {
+    return {
+      handsPlayed: this.#handsPlayed,
+      handsWon: this.#handsWon,
+      biggestPotWon: this.#biggestPotWon,
+      bestHand: this.#bestHand,
+      vpipHands: this.#vpipHands,
+      pfrHands: this.#pfrHands,
+    };
   }
 
   /** Feeds events; `userHole` and `board` are the user's cards at the time (for best hand). */
