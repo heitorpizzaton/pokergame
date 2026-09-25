@@ -105,6 +105,11 @@ export class PokerEngine {
     return structuredClone({ ...this.#state, hand: null });
   }
 
+  /** Changes a seat's showdown policy (the user's "auto-muck losing hands" setting). */
+  setAutoMuck(seat: number, autoMuck: boolean): void {
+    this.#seat(seat).autoMuck = autoMuck;
+  }
+
   dispatch(command: EngineCommand): EngineEvent[] {
     const events: EngineEvent[] = [];
     switch (command.type) {
