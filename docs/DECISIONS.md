@@ -4,6 +4,57 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-010 — Fairness and evaluator test methodology
+
+- **Date:** 2026-09-25
+- **Context:** Sections 7.1, 13.1 and 13.2 require exhaustive oracles, statistical tests "at a significance of 0.001" and a speed target, and Section 15 forbids flaky or loosened tests.
+- **Decision:**
+  - **Shuffle uniformity (200,000 crypto shuffles):** one combined chi-square over the 52 × 52 position × card table (df = 51 × 51) at alpha = 0.001, plus the 52 per-position tests with a Bonferroni-corrected alpha of 0.001 / 52 each. Running 52 independent tests at 0.001 would give CI a ~5% false-alarm rate. Starting-hand frequencies (pocket pair, suited, AA) are checked against normal-approximation binomial bounds at alpha = 0.001.
+  - **Deterministic seeded check:** all 24 orderings of 4 items over 240,000 seeded shuffles guard the Fisher-Yates index bounds without any flakiness.
+  - **Mutation check:** replacing `rng.int(i + 1)` with `rng.int(n)` made 4 of the 6 fairness tests fail.
+  - **Five-card oracle:** all 2,598,960 hands. The category counts must match, there must be exactly 7,462 distinct values, and every value must equal the one from an independent naive evaluator (`tests/support/naive-eval.ts`, which shares no code with `src/core/eval`).
+  - **Seven-card checks:** a property test compares 6- and 7-card values with the best five-card subset under the naive evaluator. `test:long` enumerates all 133,784,560 seven-card hands (category counts, 4,824 distinct values) and checks 10M random deals against the exact frequencies. It runs in about 10 s, but stays in `test:long` as Section 7.1 specifies.
+  - **Statistics helpers:** checked against SciPy reference values.
+  - **Speed:** `tests/unit/eval-speed.test.ts` asserts at least 10M evaluations per second (best of 3) on whichever machine runs the suite, and prints the rate to the CI log. `npm run bench:eval` gives the full measurement.
+- **Alternatives considered:** a fixed seed for the crypto-RNG tests, rejected because it would test only the algorithm, not the production RNG; a lower CI speed floor, rejected because the measured margin is about 5×.
+- **Consequences:** the expected false-alarm rate of the fast fairness suite is about 0.5% per run (five tests at 0.001). A failure there is treated as real and investigated, never re-run away.
+
+## ADR-009 — RNG design
+
+- **Date:** 2026-09-25
+- **Context:** Section 6 requires `crypto.getRandomValues`, rejection sampling, separate streams for the deck and the NPCs, and a seeded RNG that production builds cannot reach.
+- **Decision:**
+  - **Interface:** `Rng` (`nextUint32()`, `int(n)`) is what Section 3 calls the "SecureRng interface". It is named `Rng` because the seeded test implementation is not secure.
+  - **`CryptoRng`:** buffers 4,096 `Uint32` values per `getRandomValues` call. Each instance is an independent stream, so the engine and the AI each create their own.
+  - **Rejection sampling:** `uniformIntBelow` rejects raw values at or above `2^32 - (2^32 mod n)`, which is tested with scripted sources and a bias-sensitive bound (n = 3 × 2^30).
+  - **`SeededRng`:** xoshiro128\*\* seeded through splitmix32. It lives in `src/core/rng/seeded-rng.ts`, is **not** exported from `src/core/rng/index.ts`, and an ESLint rule rejects any import of it from `src/` (guarded by `tests/unit/lint-rules.test.ts`). Tests and scripts may import it.
+- **Alternatives considered:** a runtime `import.meta.env.PROD` guard inside `SeededRng`, rejected because `src/core` must also run outside Vite (the Node simulation harness in Phase 5), and the lint rule already keeps it out of every bundle.
+- **Consequences:** Phase 2 must inject an `Rng` into the engine. The AI's RNG (Phase 5) must be a separate `CryptoRng` instance.
+
+## ADR-008 — Hand evaluator: bitmask algorithm with 8,192-entry tables
+
+- **Date:** 2026-09-25
+- **Context:** Section 7.1 requires a fast 7-card evaluator (at least 10M/s in Node, 1M/s on a mid-range phone) that returns a comparable strength, the category and the best 5 cards.
+- **Decision:**
+  - **Algorithm:** a bit-parallel evaluator in the style of Steve Brecher's Holdem Showdown, working on per-suit 13-bit rank masks with four lookup tables of 8,192 entries (popcount, top rank, highest straight, top five ranks packed), about 50 KB built at load.
+  - **Value layout:** `category << 20 | five 4-bit ranks`, so plain integer comparison orders hands.
+  - **Card count:** 5, 6 or 7 cards through the same code.
+  - **Entry points:** `evaluateMasks` is the allocation-free core for equity loops. `evaluate(cards)` is the convenience entry point. `bestFive` tries every 5-card subset, which is fine because it runs once per showdown, not in hot loops.
+  - **Speed:** measured at 38–47M evaluations per second in Node (`npm run bench:eval`) and about 50M/s inside Vitest.
+  - **Table access:** the tables are aliased to module-local constants. Vitest's module runner compiles each access to an imported binding into a getter call, which had cut throughput to about 9M/s.
+- **Alternatives considered:** Cactus Kev with a perfect hash, which needs 21 five-card lookups per 7-card hand; the Two Plus Two table, which is about 130 MB and far too large for a PWA; HenryRLee's PokerHandEvaluator, which is fast but has larger tables and much more machinery than the target requires.
+- **Consequences:** hand naming in pt-BR (Section 5.6) is built from `HandCategory`, the rank nibbles and `bestFive` in the i18n layer. `src/core` stays language-neutral.
+
+## ADR-007 — Card encoding
+
+- **Date:** 2026-09-25
+- **Context:** cards flow through hot loops (evaluation, equity) and must serialize to JSON (Section 4.1).
+- **Decision:** a card is a branded integer `rank * 4 + suit` in [0, 52): rank index 0 = deuce … 12 = ace; suit index 0 = clubs, 1 = diamonds, 2 = hearts, 3 = spades. Text form is `As`, `Td` and so on (language-neutral, for tests, logs and hand-history export). UI labels such as "Ás de Espadas" belong to i18n.
+- **Alternatives considered:** `{ rank, suit }` objects, rejected because they allocate and are slower in loops; Cactus Kev 32-bit card words, rejected because they are only useful for that evaluator.
+- **Consequences:** `rankOf(card) = card >> 2` and `suitOf(card) = card & 3` are the only decoding primitives; suit order carries no meaning (Section 5.7).
+
+---
+
 ## ADR-006 — `npm run check` includes the e2e suite
 
 - **Date:** 2026-09-25

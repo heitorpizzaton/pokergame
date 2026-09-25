@@ -4,6 +4,61 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 3) — Claude — Phase 1 core
+
+**Branch:** `feat/phase-1-core` (PR to `main`; merged only with CI green). Also merged PR #4, which restricts the Playwright Chromium fallback to local runs so CI always uses the official browser.
+
+### Session start note
+
+`npm run check` was green on `main` at the start of Phase 1.
+
+### Done
+
+- `src/core/cards`: branded integer cards (`rank * 4 + suit`), parse and format, a fresh ordered deck and a fresh shuffled deck per call (ADR-007).
+- `src/core/rng`:
+  - The `Rng` interface and `CryptoRng` (buffered `crypto.getRandomValues`).
+  - Rejection-sampled `uniformIntBelow` and the Fisher-Yates `shuffleInPlace`.
+  - `SeededRng` (xoshiro128\*\*) for tests only. It is not exported from the index, and a lint rule forbids importing it anywhere under `src/` (ADR-009).
+- `src/core/eval`: bitmask evaluator with 8,192-entry tables for 5, 6 or 7 cards, plus `HandCategory`, `isRoyalFlush`, `compareHands` and `bestFive` (ADR-008). It runs at about 47M evals/s in Node (`npm run bench:eval`).
+- Tests (ADR-010):
+  - An exhaustive 5-card oracle: category counts, 7,462 classes, and exact agreement with an independent naive evaluator.
+  - Hand-picked cases from §13.1.
+  - Properties: a 6/7-card value equals the best 5-card subset, and the value ignores card order and suit relabelling.
+  - A speed test (at least 10M/s).
+  - RNG tests: rejection sampling and modulo bias.
+  - Fairness: 200k crypto shuffles (chi-square with Bonferroni correction) and starting-hand frequencies.
+  - Statistics helpers checked against SciPy.
+  - `test:long`: all 133,784,560 seven-card hands (category counts, 4,824 classes) plus 10M random deals. It runs in about 10 s.
+- `npm run check` is green locally (135 unit/property/statistical tests and 15 e2e tests). `npm run test:long` is green locally.
+
+### Half-done / blocked on the owner
+
+- **Phase 0 deploy is still blocked.** The repository is public now, but Pages has not been switched on: `configure-pages` reports "Get Pages site failed: Not Found", and creating the site from the workflow token is refused. The owner must set **Settings → Pages → Build and deployment → Source: GitHub Actions** and then re-run **Deploy to GitHub Pages**. Phase 0 is accepted once its `smoke` job is green.
+
+### Exact next step
+
+Start Phase 2 on `feat/phase-2-engine`:
+
+1. Write `docs/RULES.md` from Section 5, including the position-label mapping for 2–9 players, with one shared function for it in `src/core/engine`.
+2. Define the public `PlayerView` / `Action` contract **outside** `src/core/engine` (for example `src/core/view/`), per ADR-003, and add it to the allowed imports in `tests/unit/lint-rules.test.ts`.
+3. Build the table state machine with an injected `Rng`, and write the mandatory scenario tests from §13.1 first.
+
+### Known issues
+
+- Deploy is blocked on the owner enabling Pages (above).
+- The evaluator's pt-BR hand names ("Full House, Reis cheios de Setes") are not built yet. They belong in the i18n layer, from `HandCategory`, the rank nibbles of `HandValue` and `bestFive` (Phase 4).
+
+### Verify
+
+```sh
+npm ci
+npm run check
+npm run test:long
+npm run bench:eval
+```
+
+---
+
 ## 2026-09-25 (session 1, part 2) — Claude — Phase 0 scaffold
 
 **Branches:** `feat/phase-0-scaffold`, merged to `main` through PR #2 with CI green. This docs update is on `docs/phase-0-handoff`.

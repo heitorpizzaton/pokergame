@@ -21,15 +21,16 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 ## Phase 1 — Core
 
-- [ ] Card encoding, parsing and formatting
-- [ ] `SecureRng` (crypto, rejection sampling) and a seeded test RNG that production builds cannot reach
-- [ ] Fisher-Yates shuffle
-- [ ] 7-card evaluator (strength, category, best 5)
-- [ ] Exhaustive 5-card oracle test
-- [ ] Hand-picked evaluator cases (Section 13.1)
-- [ ] Fast statistical fairness tests (Section 13.2)
-- [ ] Evaluator speed benchmark (≥ 10M evals/s in Node)
-- [ ] **Accept:** all Section 13.1 and fast 13.2 tests pass; the speed target is met
+- [x] Card encoding, parsing and formatting (`src/core/cards`, ADR-007)
+- [x] `Rng` interface, `CryptoRng` (crypto, rejection sampling) and a seeded test RNG that production code cannot import (lint-enforced; ADR-009)
+- [x] Fisher-Yates shuffle and fresh shuffled deck per call
+- [x] 7-card evaluator: comparable strength, category, best 5 (`src/core/eval`, ADR-008)
+- [x] Exhaustive 5-card oracle test (category counts, 7,462 classes, exact agreement with an independent naive evaluator)
+- [x] Hand-picked evaluator cases (Section 13.1)
+- [x] Fast statistical fairness tests (Section 13.2; ADR-010)
+- [x] Evaluator speed: about 47M evals/s in Node (`npm run bench:eval`); at least 10M/s asserted in the suite
+- [x] `test:long`: exhaustive 7-card oracle (133,784,560 hands, 4,824 classes) and 10M random deals
+- [x] **Accept:** all Section 13.1 and fast 13.2 tests pass; the evaluator meets its speed target
 
 ## Phase 2 — Engine
 
