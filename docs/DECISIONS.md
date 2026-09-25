@@ -39,6 +39,7 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
   - `no-restricted-syntax` rejects JSX text containing letters in `src/ui` and `src/app`.
 
   `tests/unit/lint-rules.test.ts` lints probe snippets and fails if any rule is removed or weakened. This was verified by deleting two of the rules, which made 17 tests fail.
+
 - **Alternatives considered:** `eslint-plugin-import`'s `no-restricted-paths` (resolves aliases, but adds a plugin and resolver for a codebase that uses only relative imports); dependency-cruiser (heavier, and a second tool to maintain).
 - **Consequences:** `PlayerView` and `Action` MUST NOT be defined inside `src/core/engine`, or `src/ai` cannot import them. Phase 2 must place this public contract in its own module (for example `src/core/view/`) and add it to the allowed list in the test. The Section 8.1 runtime test (NPC decisions unchanged when hidden cards are randomized) is still required in Phase 5.
 
