@@ -1,0 +1,23 @@
+name: Long tests
+
+# Exhaustive oracles, large statistical samples and AI simulations (AGENTS.md §13.2).
+# Too slow for every push, so this runs only on demand.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  long:
+    name: test:long
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:long
