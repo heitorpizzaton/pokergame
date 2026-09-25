@@ -4,6 +4,29 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-014 — Definition of outs and improvement
+
+- **Date:** 2026-09-25
+- **Context:** Section 7.3 asks for "outs for the next card, with the cards listed" and for improvement probabilities, but "improve" is ambiguous. For example, a card that pairs the board lifts every player's hand equally.
+- **Decision:** an **out** is an unseen card that, dealt next, lifts the hero's hand to a **higher category that the board alone does not also reach**. So the improvement belongs to the hero. "Improve by the river" uses the same definition, enumerated exactly over every runout. The "advanced" split marks an out as **tainted** (an estimate) when it pairs the board or adds a third card of one suit without giving the hero a flush. Reference draw probabilities (§7.2) come from `probabilityOfAtLeast(hero, board, category)`, which is exact.
+- **Alternatives considered:** counting only cards that reach a flush or straight (misses pair and trips improvements); counting any category increase (would count board pairs that help everyone).
+- **Consequences:** a nut flush draw with two overcards shows 15 outs (9 flush + 6 overcards), which matches common poker usage.
+
+## ADR-013 — Equity engine: preflop table, exact enumeration, Monte Carlo
+
+- **Date:** 2026-09-25
+- **Context:** Section 7.2 requires exact results where feasible (heads-up on every street), Monte Carlo elsewhere with a precision target and a time cap, work off the main thread, caching, and cancellation.
+- **Decision:**
+  - **Heads-up preflop against a random hand:** read from an **exact precomputed table** of the 169 starting-hand classes (`src/core/equity/preflop-table.ts`). `npm run gen:preflop` builds it by enumerating all 47,008 suit-canonical matchups over all 1,712,304 boards, using every CPU core (about 30 min).
+    - Checks: the weighted average of the table is exactly 50%; AA is about 85.2%; a Monte Carlo cross-check runs in the fast suite; and `test:long` recomputes AA, 32o and T9s by brute force over all 1,225 opponent hands without the canonicalization shortcut.
+  - **Exact enumeration:** used whenever the scenario count (board completions × ordered opponent hands) is at most **1,250,000**. That covers heads-up on the flop, turn and river, and two opponents on the river. Inner loops use incremental suit masks and allocate nothing, so a heads-up flop takes about 60 ms. Hand-versus-hand (all-in runouts, AA vs KK) is always exact; preflop that is 1,712,304 boards in about 100 ms.
+  - **Monte Carlo** (`MonteCarloEquity`): each iteration is a partial Fisher-Yates draw of the opponents' hands and the rest of the board. It stops once there are at least 4,000 iterations **and** the standard error is below **0.25 pp**, or at a 1.5 s hard cap. Results are reported after every chunk for progressive display, and the run is cancelled between chunks.
+  - **Worker:** `src/workers/equity.worker.ts` is thin glue around `createEquityHandler`, which is unit-tested in process. Only the latest request runs. `EquityClient` caches final results per game state (hero cards, board, number of opponents) and resolves superseded requests to `null`.
+- **Alternatives considered:** Monte Carlo for heads-up preflop, rejected because the spec wants it exact and the table makes it both exact and instant; computing the table at runtime, rejected because it takes about 2 × 10⁹ evaluations per hand.
+- **Consequences:** the odds panel (Phase 6) gets exact heads-up numbers instantly and precise multiway estimates within its time budget. The table is regenerated only if the evaluator's value layout changes.
+
+---
+
 ## ADR-012 — Rule interpretations fixed by the engine
 
 - **Date:** 2026-09-25

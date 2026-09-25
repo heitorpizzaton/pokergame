@@ -4,6 +4,47 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-25 (session 1, part 6) — Claude — Phase 3 equity
+
+**Branch:** `feat/phase-3-equity` (PR to `main`, merged with CI green). Phase 4 is being built in parallel on `feat/phase-4-ui`.
+
+### Done
+
+- `src/core/equity/`:
+  - `exactEquityVsRandom` (budget 1.25M scenarios) and `exactEquityVsHands`.
+  - `MonteCarloEquity` and `runEquity`, which picks the table, exact enumeration or Monte Carlo.
+  - `drawOdds` (outs, clean and tainted outs, improve next card / by river) and `probabilityOfAtLeast`.
+  - `potOdds` / `assessCall`.
+  - `preflopClass` (label, exact equity vs random, `topShare` percentile, rank).
+- `src/core/equity/preflop-table.ts`: generated exactly by `scripts/gen-preflop-table.ts` (47,008 canonical matchups, all cores, about 30 min).
+- `src/workers/`: equity worker glue, a protocol handler with cancellation, and `EquityClient` with a per-state cache.
+- Tests:
+  - Every §7.2 reference value: AA vs KK 81.95% averaged over suits; AA vs random 85.2%; 9 outs 34.97%; OESD 31.45%; 9/46 = 19.57%.
+  - Exact vs Monte Carlo agreement on 8 scenarios, plus the table against Monte Carlo.
+  - Table sanity: 1,326 combos, a 50% weighted average, AA first and 32o last.
+  - Runtime: strategy choice, stopping below 0.25 pp, time cap, cancellation.
+  - Worker protocol and client cache.
+  - `test:long` adds a brute-force recomputation of three table rows.
+- Decisions: ADR-013 (equity engine) and ADR-014 (outs definition).
+
+### Exact next step
+
+Merge Phase 4 (`feat/phase-4-ui`, already implemented and tested in a separate worktree) after bringing `main` in. Then Phase 5 (AI) on `feat/phase-5-ai`.
+
+### Known issues
+
+- None.
+
+### Verify
+
+```sh
+npm ci
+npm run check
+npm run test:long   # includes about 6 min of brute-force table checks
+```
+
+---
+
 ## 2026-09-25 (session 1, part 5) — Claude — Phase 2 engine
 
 **Branch:** `feat/phase-2-engine` (merged to `main` through its PR once CI is green). The owner asked for all remaining phases to be done in order, one PR each.
