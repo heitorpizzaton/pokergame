@@ -1,3 +1,4 @@
+import { STYLE_IDS, type StyleId } from '../ai/index.ts';
 import type { GameConfig } from '../core/engine/index.ts';
 
 /** What the user chooses on the Setup screen (AGENTS.md §5.1). */
@@ -6,6 +7,8 @@ export interface GameSetup {
   readonly startingStack: number;
   readonly smallBlind: number;
   readonly bigBlind: number;
+  /** 'random' for a realistic mix, or one style per opponent (AGENTS.md §5.1, §8.3). */
+  readonly opponents: 'random' | readonly StyleId[];
 }
 
 export const DEFAULT_SETUP: GameSetup = {
@@ -13,7 +16,15 @@ export const DEFAULT_SETUP: GameSetup = {
   startingStack: 10_000,
   smallBlind: 50,
   bigBlind: 100,
+  opponents: 'random',
 };
+
+/** The chosen style for each opponent, padding or trimming to the table size. */
+export function opponentStyles(setup: GameSetup): readonly StyleId[] | 'random' {
+  if (setup.opponents === 'random') return 'random';
+  const chosen = setup.opponents;
+  return Array.from({ length: setup.players - 1 }, (_, i): StyleId => chosen[i] ?? 'tag');
+}
 
 export const BUY_IN_PRESETS = [1_000, 5_000, 10_000, 50_000] as const;
 export const MIN_PLAYERS = 2;
@@ -73,11 +84,15 @@ export function loadLastSetup(storage: Pick<Storage, 'getItem'> | null): GameSet
     const raw = storage?.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETUP;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const opponents = Array.isArray(parsed.opponents)
+      ? parsed.opponents.filter((x): x is StyleId => STYLE_IDS.includes(x as StyleId))
+      : 'random';
     const setup: GameSetup = {
       players: clampPlayers(Number(parsed.players ?? DEFAULT_SETUP.players)),
       startingStack: Number(parsed.startingStack ?? DEFAULT_SETUP.startingStack),
       smallBlind: Number(parsed.smallBlind ?? DEFAULT_SETUP.smallBlind),
       bigBlind: Number(parsed.bigBlind ?? DEFAULT_SETUP.bigBlind),
+      opponents,
     };
     return checkSetup(setup).errors.length === 0 ? setup : DEFAULT_SETUP;
   } catch {

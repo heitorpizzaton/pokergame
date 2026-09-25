@@ -4,6 +4,23 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-017 — NPC AI architecture
+
+- **Date:** 2026-09-25
+- **Context:** Section 8 requires NPCs that play like distinct, realistic humans, decide only from public information, adapt to opponents, stay within a time budget, and hit per-style statistical targets.
+- **Decision (details in `docs/AI.md`):**
+  - **`NpcBrain`:** each NPC is one brain, with `decide(view)` for its turns and `observeHandEnd(view)` for learning and tilt. A brain holds only its opponent model and tilt state.
+  - **Preflop:** soft, style-parameterized ranges over a playability-adjusted ordering of the exact preflop table, scaled by position and table size, plus push/fold at 12 BB or less.
+  - **Postflop:** Monte Carlo equity against Bayesian-narrowed opponent ranges (1,326-combo weights driven by observed tendencies and each public action), then style thresholds and frequencies for value, c-bets, semi-bluffs, bluffs and calls against pot odds.
+  - **Sanity:** `sanitize` plus `isNuts` guarantee the §8.2.9 rules.
+  - **Speed:** the brains live in an AI worker behind the `NpcDriver` interface (`LocalNpcDriver` in process, `WorkerNpcDriver` in the browser). The controller races the human-like delay against the decision and falls back to the rule-based heuristic at the 1.5 s cap.
+  - **Harness:** `npm run sim` (`scripts/sim-core.ts`) plays fresh 100 BB hands per deal so win rates are measured without freezeout effects.
+  - **TypeScript:** `erasableSyntaxOnly` is now on, because Node's type stripping (used by the scripts) cannot run parameter properties.
+- **Alternatives considered:** solver-style strategies, rejected because they would not produce the human-like leaks and the variety the spec asks for; heuristic hand-strength buckets without ranges, rejected because they are easy to exploit and would ignore opponent modelling (§8.2.2).
+- **Consequences:** style targets are verified by `tests/long/ai-sim.test.ts` over 100,000 hands. Tuning goes through `src/ai/styles/styles.ts` and `npm run sim`. The fast suite checks legality, the information boundary, the sanity rules, style ordering and decision times.
+
+---
+
 ## ADR-016 — Temporary rule-based NPC (Phase 4)
 
 - **Date:** 2026-09-25

@@ -59,6 +59,21 @@ test('validates the setup form', async ({ page }) => {
   await expect(page.getByRole('button', { name: strings.setup.start })).toBeEnabled();
 });
 
+test('lets the user pick a style for each opponent', async ({ page }) => {
+  await openSetup(page);
+  await setPlayers(page, 3);
+  await page.getByLabel(strings.setup.chooseStyles).check();
+  const selects = page.getByRole('combobox');
+  await expect(selects).toHaveCount(2);
+  await selects.nth(0).selectOption({ label: strings.styles.maniac });
+  await selects.nth(1).selectOption({ label: strings.styles.nit });
+  await page.getByRole('button', { name: strings.setup.start }).click();
+  await expect(page.getByTestId('table-screen')).toBeVisible();
+  await expect(page.getByTestId('action-bar').or(page.getByTestId('pre-action-bar'))).toBeVisible({
+    timeout: 30_000,
+  });
+});
+
 test('plays hands using every action type', async ({ page }) => {
   test.setTimeout(90_000);
   await openSetup(page);

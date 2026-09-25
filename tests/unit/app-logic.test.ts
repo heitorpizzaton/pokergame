@@ -40,7 +40,13 @@ describe('setup validation (AGENTS.md §5.1)', () => {
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => store.set(k, v),
     };
-    const setup = { players: 3, startingStack: 5000, smallBlind: 25, bigBlind: 50 };
+    const setup = {
+      players: 3,
+      startingStack: 5000,
+      smallBlind: 25,
+      bigBlind: 50,
+      opponents: 'random' as const,
+    };
     saveLastSetup(storage, setup);
     expect(loadLastSetup(storage)).toEqual(setup);
     store.set('mesa-viva:last-setup', '{broken');
