@@ -432,3 +432,353 @@ Work strictly in order. Each phase ends with a green CI, updated docs and a hand
 - The UI works at 360×640 portrait and on desktop, in pt-BR, with no layout overflow.
 - The docs (`PROGRESS.md`, `HANDOFF.md`, and `DECISIONS.md` if applicable) are updated.
 - There are no `TODO` or `FIXME` markers left in the delivered feature.
+
+---
+
+# AGENTS.md — Part II: Version 2 (bluffing, odds panel, realistic 3D table)
+
+> **Instruction for the agent who receives this file:** append this entire document to the end of `AGENTS.md` (it continues the numbering at Section 17), commit it with `docs: add Part II (v2) spec`, add every Part II task to `docs/PROGRESS.md`, and log the change in `docs/DECISIONS.md`. From then on, `AGENTS.md` (Parts I and II) remains the single source of truth. Where Part II changes a rule from Part I, **Part II wins**, and the changed Part I sections are listed in Section 17.3.
+> Everything in Part I (collaboration protocol, fairness, information boundary, integer chips, pt-BR UI, tests, Definition of Done) still applies.
+
+---
+
+## 17. Scope of Version 2
+
+### 17.1 Goals
+1. **Bluffing by style:** every NPC style has explicit, measured bluffing frequencies that feel like real people (Section 18).
+2. **Minimizable odds panel:** the odds panel starts **minimized** and can be expanded, minimized or turned off (Section 19).
+3. **Realistic 3D table:** a new 3D renderer with realistic, distinct seated people, a realistic casino environment, motion graphics and cinematic moments, running in the browser on phones (Sections 20–27).
+
+### 17.2 Hard constraints set by the owner
+- **Zero cost.** No paid tools, assets, services or subscriptions. Free tiers are acceptable only if no payment method is required.
+- **Browser only.** The game stays a web app / PWA hosted as today. No Unreal, Unity or native builds.
+- **No dedicated GPU on the owner's PC.** Nothing in the pipeline may require the owner to run heavy desktop software (no Unreal/MetaHuman, no manual Blender work). All asset creation is **scripted and runs headless in the agent's environment**.
+- **The main repository is public.** Only assets whose license allows public redistribution may be committed to it (Section 21).
+- **The game engine is unchanged.** `core/` rules, RNG, equity and the event stream stay as they are. The 3D table is a new *view* of the same state and events. The existing 2D table remains as a fallback.
+
+### 17.3 Part I sections changed by Part II
+- **7.3 (odds panel):** default state changes from ON to **minimized** (Section 19).
+- **8.2 / 8.3 (AI):** bluffing becomes an explicit, measured sub-model (Section 18).
+- **8.4 (speed):** NPC delay now also drives body animation. The delay budget is unchanged (Section 24.5).
+- **11 (UI/UX):** the table has two renderers, 3D (default where supported) and 2D (fallback) (Section 20).
+- **12 (performance budgets):** the 3D table gets its own budgets. The initial route budget is unchanged (Section 26).
+- **14 (phases):** new phases V1–V7 are added after Phase 8 (Section 28).
+
+---
+
+## 18. NPC bluffing model
+
+### 18.1 Definitions (used in code, simulator and tests)
+All definitions use the NPC's own estimates at decision time, computed from `PlayerView` only.
+- **Value bet:** a bet or raise where the NPC's equity vs. the estimated *calling* range of the opponents is ≥ 55%.
+- **Semi-bluff:** a bet or raise where that equity is < 55% but the NPC has a real draw (≥ 6 clean outs on the flop or ≥ 6 on the turn), or current equity ≥ 30%.
+- **Pure bluff:** a bet or raise with equity < 30% vs. the calling range and no real draw. On the river, any bet or raise with equity < 30% vs. the calling range is a pure bluff.
+- **Bluff opportunity:** a decision point where the NPC can bet or raise, holds a hand that would be a semi-bluff or pure bluff if it bet, and the pot is not already multi-way with 4 or more players.
+
+Put these definitions in one shared module (`ai/postflop/classify.ts`) used by both the AI and the simulator statistics, so they can never drift apart.
+
+### 18.2 Target frequencies per style
+Measured by the simulator over ≥ 100,000 hands at 6 players, 100 BB. Values are ranges the style's long-run average MUST fall into.
+
+| Style | Pure-bluff rate at bluff opportunities (flop / turn / river) | Share of river bets that are pure bluffs | C-bet frequency (heads-up, as preflop raiser) | Bluff-raise tendency |
+|---|---|---|---|---|
+| Regular sólido (TAG) | 20–30% / 15–25% / 12–20% | 25–35% | 55–70% | Moderate, blocker-driven |
+| Agressivo (LAG) | 30–42% / 25–35% / 20–30% | 35–45% | 65–80% | High |
+| Pedra (Nit) | 5–12% / 3–8% / 2–6% | 5–12% | 40–55% | Almost never |
+| Pagador (Calling station) | 3–8% / 2–6% / 1–5% | 3–10% | 30–45% | Almost never |
+| Maníaco | 50–70% / 45–65% / 40–60% | 50–65% | 80–95% | Very high, large sizes |
+| Recreativo | 10–20% / 8–15% / 8–15% | 10–20% | 40–55% | Rare, erratic |
+
+Document the targets for 2, 4 and 9 players in `docs/AI.md` (fewer players means more bluffing; full ring means less).
+
+### 18.3 What makes a bluff more or less likely (all styles, scaled by style)
+The bluff probability is computed as `base(style, street) × Π modifiers`, then clamped to [0, 0.95]. Required modifiers:
+- **Fold equity estimate:** from the opponent model (fold-to-bet, fold-to-c-bet, went-to-showdown). Strong styles (TAG, LAG) bluff far less against calling stations, including the user if the user calls too much. Weak styles (Recreativo, Pagador) mostly ignore this. The Maníaco ignores it on purpose.
+- **Number of opponents:** multiply by roughly 0.55 for each extra opponent beyond one.
+- **Position:** in position ×1.2, out of position ×0.85.
+- **Board texture and story:** boards that favor the NPC's perceived range (e.g., high-card boards for the preflop raiser) raise the probability. Boards that favor the caller lower it.
+- **Blockers:** holding cards that block the opponent's strong hands or the nut draw raises the probability (e.g., the ace of the flush suit on a three-flush board).
+- **Showdown value:** hands that can win at showdown by checking are bluffed less (good players turn them into check-calls).
+- **Stack-to-pot ratio and sizing:** bluffs use realistic sizes, and the same size distribution as value bets for strong styles (so size does not reveal the hand). Weak styles MAY size bluffs differently (a realistic "leak").
+- **Recent history:** a failed bluff shown at showdown reduces bluffing for a few hands (strong styles), or not at all (Maníaco). Tilt (Part I, 8.2.8) multiplies bluffing by 1.3–1.8 for a few hands, less for strong styles.
+- **Personal variation:** every NPC instance gets a persistent personal multiplier drawn once at creation from [0.8, 1.2], so two TAGs at the same table do not bluff identically. Draw it with the AI's secure RNG.
+
+### 18.4 Sanity rules for bluffing (MUST)
+- Never bluff into a player who is already all-in with no side pot to contest (there is nothing to fold).
+- Never "bluff" with the nuts or with a hand classified as a value bet (classification comes from 18.1).
+- Never call off a stack to "keep a bluff going" when the hand classification says fold, except for the Maníaco and Pagador leak parameters, which are bounded and documented.
+- Bluffs must be legal actions with legal sizes (Part I rules apply).
+
+### 18.5 Tests and metrics
+- The simulator (`npm run sim`) prints, per style: pure-bluff rate per street, river bluff share, c-bet frequency, bluff success rate (how often the bluff wins the pot immediately), and bluff-raise frequency.
+- Tests assert every Section 18.2 range, plus: a TAG's bluff rate against a scripted calling-station bot is at least 40% lower than against a scripted folding bot; the Maníaco's is not significantly lower.
+- The information-boundary test from Part I (8.1) is re-run with the bluff model active.
+
+---
+
+## 19. Odds panel: three states
+
+- States: **Desligado** (off, no computation for display, as in Part I), **Minimizado** (default), **Expandido**.
+- **Minimizado:** a small pill ("Equity 42%") above the action bar, never overlapping cards, the action bar or seats. One tap expands it. The equity is still computed so the pill can show it.
+- **Expandido:** the full panel from Part I 7.3. A minimize control ("–") and swipe-down gesture return it to minimized.
+- The on/off switch stays in the table header and in Settings. The minimized/expanded state is remembered between games.
+- **First run:** minimized. If the user expands it, that becomes their remembered state.
+- Works identically in the 2D and 3D renderers (it is DOM UI, not 3D).
+- e2e tests: default is minimized on a fresh profile; expand/minimize persists after reload; off stops all display computation.
+
+---
+
+## 20. 3D renderer architecture
+
+### 20.1 Stack (all free, MIT/Apache-compatible licenses)
+- `three`, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing` (or `postprocessing`), `n8ao` (ambient occlusion), `detect-gpu` (initial quality guess), `gsap` (UI motion timelines).
+- **Rendering backend:** WebGL2 is the baseline. The WebGPU renderer MAY be enabled behind a flag only after it is verified on Chrome Android and iOS Safari. Log the decision in `DECISIONS.md`.
+- Verify every package license before adding it; record it in `docs/LICENSES.md`.
+
+### 20.2 Renderer contract
+- Create `ui/table/TableRenderer` as the interface both renderers implement. Input: the engine's public table state and the event stream (the same data the 2D table uses today). Output: nothing but visuals and sound.
+- Move the existing 2D table under `ui/table2d/` with no behavior change. The new one lives in `ui/table3d/`.
+- Poker logic MUST NOT enter the 3D code, exactly as in Part I. The 3D renderer never decides anything about the game.
+- The **DOM HUD stays DOM**: action bar, odds panel, pre-action checkboxes, menus, toasts, timers. Seat labels (name, stack, last action, bet amount) are DOM elements positioned each frame from projected 3D anchor points (one batched projection pass writing CSS transforms; not one `Html` portal per element if that costs performance).
+- The 3D code is a **lazy-loaded chunk**. The menu and setup screens must not download any 3D code or assets.
+
+### 20.3 Graphics setting
+- Settings → **"Gráficos"**: `Automático` (default), `Alta`, `Média`, `Baixa`, `2D clássico`.
+- `Automático` picks a tier with `detect-gpu`, then a runtime performance monitor lowers it (never raises it during a hand) if the frame rate stays under target for 3 s. Show a small toast when it lowers ("Qualidade gráfica ajustada para Média").
+- Devices without WebGL2, or failing the minimum tier, fall back to `2D clássico` automatically.
+- **Idle rendering:** when nothing moves (waiting for the user with no animation playing), drop to on-demand rendering or ≤ 20 fps for idle micro-motion, to save battery.
+
+### 20.4 Quality tiers
+
+| | Alta | Média | Baixa |
+|---|---|---|---|
+| Character LOD | LOD0 (~15–25k tris each) | LOD1 (~7–10k) | LOD2 (~3–4k) |
+| Texture size (characters) | 2048 | 1024 | 512 |
+| Real-time shadows | 1 key light, 2048 map, soft | 1 key light, 1024 | none (baked + contact blobs) |
+| Ambient occlusion | N8AO | N8AO half-res | baked only |
+| Bloom / vignette / color grading | yes | yes | grading only |
+| Depth of field | cinematic moments only | off | off |
+| Antialiasing | SMAA or MSAA | FXAA | FXAA |
+| Pixel ratio cap | 2.0 | 1.5 | 1.0 |
+| Target fps | 60 | 45–60 | 30 stable |
+
+---
+
+## 21. Assets, licenses and the public repository
+
+### 21.1 Allowed sources (in order of preference)
+1. **Generated by the agents' own scripts** (Blender Python, procedural textures, SVG-to-texture). Owned by the project.
+2. **CC0**: MakeHuman / MPFB2 system assets, Poly Haven (HDRIs, textures, models), ambientCG, Quaternius, Kenney, Freesound files explicitly marked CC0.
+3. **CC-BY** only when there is no CC0 alternative, with attribution shown on a **"Créditos"** screen (reachable from Settings).
+4. **Mixamo** (free, royalty-free for games, but raw files **may not be redistributed**): allowed **only** baked into the final optimized game files. The raw FBX files MUST live in the private art repository (21.3), never in the public repo.
+
+Forbidden: anything paid, anything with "non-commercial", "no derivatives", "editorial use" or unclear licenses, ripped game assets, AI-generated assets from paid services, real casino brands, real people's likenesses.
+
+### 21.2 License registry (enforced by CI)
+- `docs/LICENSES.md` lists **every** file under `public/assets/` (or a folder rule covering it): source, author, license, URL, and the generating script when applicable.
+- A CI script (`npm run assets:check`) fails if any shipped asset is missing from the registry, has a forbidden license, or exceeds its size budget (Section 26).
+
+### 21.3 Private art repository (for non-redistributable sources)
+- A second, **private** GitHub repository (suggested name: `pokergame-art`) holds raw Mixamo FBX files and any other source the license forbids redistributing. Private repositories are free on GitHub.
+- The build scripts that read from it run in the agent environment. Only their **optimized outputs** (GLB with baked animation, KTX2 textures) are committed to the public repo.
+- If the private repo is not available in a session, asset scripts MUST still work without it (the Mixamo-derived animations are optional; see 24.3).
+
+### 21.4 Source-as-code rule
+- Prefer committing **scripts that generate assets** over committing large binaries. Every generated asset MUST be reproducible with one command (`npm run assets:build`), pinned tool versions and fixed seeds.
+- Do not commit `.blend` files unless a script cannot reproduce them; if you must, keep them in the private art repo.
+- Do not use Git LFS in the public repo (the free quota is small). Optimized outputs are small enough for normal Git when the budgets in Section 26 are respected.
+
+---
+
+## 22. Asset pipeline (headless, reproducible)
+
+### 22.1 Tools
+- **Blender as a Python module:** `pip install bpy==<pinned>` (the wheel must match the Python version of the environment; document the pair in `DECISIONS.md`). Fallback: the Blender Linux tarball, if the network allows it.
+- **MPFB2** (MakeHuman plugin for Blender), from its official GitHub repository, pinned to a tag. MPFB2's code is GPL-3: keep it under `tools/` (build-time only), never bundle it into the web app, and keep its license file. The **characters it generates** use its CC0 system assets and are CC0.
+- **glTF tooling:** `@gltf-transform/cli` (dedup, prune, weld, simplify, resample, meshopt compression, KTX2 textures), `gltf-validator`.
+- **Texture tooling:** `sharp` / `resvg` for SVG → PNG; KTX-Software (`toktx`) or `basisu` for KTX2 (UASTC for normal maps, ETC1S for color maps).
+- If the environment's network allowlist blocks a download, **stop and write the exact file list and URLs in `HANDOFF.md` under "Owner action needed"** instead of looking for workarounds.
+
+### 22.2 Folder layout
+```
+art/
+  characters/roster.json       # the character roster definition (22.3)
+  scripts/                     # Blender Python scripts: characters, props, bake, export
+  textures-src/                # SVG/procedural sources (cards, chips, felt patterns)
+tools/
+  mpfb2/                       # vendored or submodule, pinned, with its LICENSE
+scripts/assets/                # node scripts: optimize, validate, check budgets, update registry
+public/assets/3d/              # optimized outputs only (GLB, KTX2, HDR)
+```
+
+### 22.3 Commands
+- `npm run assets:build` — runs every generator, then optimization, then validation.
+- `npm run assets:characters`, `assets:props`, `assets:env`, `assets:anim` — partial builds.
+- `npm run assets:check` — registry, licenses, sizes, `gltf-validator` with zero errors.
+- Asset builds are **not** part of the normal CI run (too slow). CI runs only `assets:check` on the committed outputs.
+
+---
+
+## 23. Characters ("pessoas diferentes")
+
+### 23.1 Roster
+- Generate a roster of **at least 16 distinct people** with MPFB2 by script, defined in `art/characters/roster.json` (one entry per character, all parameters explicit, fixed seed).
+- Real variety, like a real card room: ages 22–75; many ethnicities and skin tones; different heights, body types, faces and presentations; balanced men and women.
+- **Wardrobe and accessories:** smart-casual casino clothing (blazers, shirts, polos, hoodies, dresses, knitwear), glasses, sunglasses, caps, beanies, beards, mustaches, jewelry, watches. Only CC0 or project-generated clothing.
+- **Hair:** the weakest point of free pipelines, so give it explicit effort: hair meshes with alpha-tested/alpha-hashed cards, anisotropic-looking highlights, correct sorting; a buzz cut, bald and short styles look best and should be well represented.
+- **Faces:** avoid the "default MakeHuman face". Vary facial proportions per character, add subtle asymmetry, wrinkles/age maps for older characters, and freckles/moles on some.
+
+### 23.2 Materials (realism on a budget)
+- Skin: `MeshPhysicalMaterial` with base color, normal and roughness maps, subtle sheen, and a cheap subsurface-scattering approximation (wrap lighting or a thickness-based tint in a shader chunk). Avoid plastic-looking specular.
+- Eyes: separate cornea with high specular and a wet highlight; iris with depth; eyelid shadow. Eyes sell realism; do not skip them.
+- Cloth: fabric-appropriate roughness and sheen, detail normal maps.
+
+### 23.3 Rig, LODs and export
+- One shared humanoid skeleton for all characters (MPFB2's default rig, or a documented equivalent) so every animation fits every character.
+- Facial motion: blinks, eye direction and a few expressions (neutral, focused, slight smile, disappointed, smug). Use the face bones or shape keys MPFB2 provides; validate what works in the Phase V2 spike and record it in `DECISIONS.md`.
+- Seated body only needs full detail from the waist up. Legs may use a simplified mesh hidden by the table.
+- Export three LODs per character (23.4 of the tier table), GLB with meshopt and KTX2.
+
+### 23.4 Linking characters to NPCs
+- Each NPC gets a character model instead of (or in addition to) the procedural 2D avatar. The NPC's generated name MUST fit the character's presentation (the name pools are tagged per character).
+- No duplicate characters at the same table. The 2D fallback keeps using avatars derived from the same character (portrait render generated at build time).
+- The user's own seat has no visible body in the default camera (first-person). The user's hands MAY appear when looking at hole cards (optional, Phase V6).
+
+---
+
+## 24. Animation
+
+### 24.1 Layers (combined per character)
+1. **Base seated pose** (sitting at a card table, forearms near the rail).
+2. **Procedural idle layer (code):** breathing, small weight shifts, blinks (random intervals), eye saccades, head and eyes looking at the active player, the board when a card falls, the pot on big bets. Noise-driven, never looping visibly.
+3. **Gesture layer (clips):** actions triggered by engine events (24.2).
+4. **IK layer (code):** hands reaching the character's own chip stack and the betting line, and reaching hole cards on the rail. Two-bone IK for arms, look-at for head and eyes.
+
+### 24.2 Event → gesture mapping (minimum set)
+| Engine event / state | Gesture |
+|---|---|
+| Hole cards dealt to the NPC | Peek at cards (lift corners), then protect them with a hand or chip |
+| NPC is "thinking" (the delay from Part I 8.4) | Chip riffling, chin touch, fingers tapping, glance at the board; chosen per style and mood |
+| Check | Knock the table with knuckles or tap twice |
+| Call / bet / raise | Push the right number of chips to the betting line (IK); raises and all-ins are more decisive; the 3D chips match the real amount |
+| All-in | Push the whole stack forward with both hands |
+| Fold | Slide or toss cards face-down toward the muck |
+| Wins a pot | Rakes the chips in; subtle satisfied expression (style-dependent) |
+| Loses a big pot | Leans back, exhales, rubs face; if tilted (Part I 8.2.8), more agitated posture for a few hands |
+| Eliminated | Stands up and leaves the seat (seat becomes empty) |
+| Shows cards at showdown | Turns the cards face-up on the felt |
+
+### 24.3 Sources of clips
+- **Keyframed clips authored by the agents as Blender Python scripts** (either agent may author them; the owner may also ask GPT-6 Astra specifically to author them). Each script defines keys for the shared skeleton, is committed under `art/scripts/anim/`, and is reproducible. This is the **primary** source for poker-specific gestures (peek, knock, chip push, fold toss, riffle).
+- **Mixamo (optional):** seated idles and generic upper-body motions downloaded by the owner into the private art repo, retargeted to the shared skeleton by a committed script, and baked. The game MUST look complete without them.
+- **CC0 libraries** (Quaternius and similar) for generic motion.
+- Retargeting is done with a committed Blender script (bone-name mapping + bake). No paid add-ons.
+
+### 24.4 Animation quality rules
+- Blend between layers with smooth crossfades (≥ 150 ms); no popping or foot/hand sliding on the table.
+- Hands must contact the table, chips and cards convincingly (IK targets on the real surfaces).
+- No two NPCs play the same idle in sync (random phase offsets and per-character speed variation of ±10%).
+- `prefers-reduced-motion` and the reduced-motion setting reduce gestures to minimal versions.
+
+### 24.5 Fairness and timing rules (MUST)
+- **No hand-strength tells.** Animations, expressions and timing MUST NOT correlate with the NPC's hidden cards. They may depend only on the action chosen, the NPC's style, mood/tilt and public events. Add a test: across 10,000+ simulated decisions, gesture and expression choice is statistically independent of the NPC's hidden hand strength given the chosen action. (A future optional "tells" mode may be proposed to the owner, but it is out of scope and off by default.)
+- Gestures fit inside the NPC decision delay from Part I 8.4. The delay budget does not grow for animation; the action is shown to the engine at the end of the delay exactly as today.
+- Every animation is skippable with a tap and scales with the speed setting ("Rápido" plays short versions).
+
+---
+
+## 25. Environment, lighting, camera and motion graphics
+
+### 25.1 Environment and props
+- **Room:** an intimate, modern private card room (dark wood, brass or gold details, warm pendant light over the table, soft background out of focus). No real brands or logos.
+- **Table:** oval, felt with a fabric normal map and subtle wear, padded leather rail with stitching, wood trim, a betting line, the dealer position with a card shoe or dealer tray.
+- **Chips:** modeled by script, PBR clay/composite look with edge spots and an inlay; denominations and colors per Part I 11.1; stacks built by instancing (one instanced mesh per denomination) so thousands of chips stay cheap.
+- **Cards:** faces generated from the project's own SVG designs into a KTX2 atlas; card backs with the original design; four-color option supported; slight bend and specular sheen.
+- **Dealer button** and blind markers modeled by script.
+
+### 25.2 Lighting
+- Bake lighting for the static room and table in Blender Cycles (headless, CPU) into lightmaps/AO maps.
+- One real-time key light above the table for chips, cards, hands and characters (shadows per tier); a low-resolution Poly Haven HDRI for reflections and ambient light; a light probe or environment map for characters.
+- Tone mapping (AgX or ACES) and a color-grading LUT for a warm, cinematic casino look.
+
+### 25.3 Camera
+- **Default ("Jogador"):** the user's seat point of view, slightly elevated, looking across the table. Portrait and landscape use different framing so **all seats, the board and the pot are always visible** at 360×640 portrait (portrait uses a higher, steeper angle).
+- **Other modes** (Settings → "Câmera"): `Jogador`, `Aérea` (top-down, closest to the 2D table), `Cinemática` (Jogador plus automatic camera moves).
+- **Cinematic moments** (only in `Cinemática`, skippable, disabled by reduced motion): slow dolly on an all-in runout, a close-up on the revealed hands at a big showdown, a sweep to the winner on a big pot.
+- **Readability rule:** the user's hole cards and the board must always be readable. The user's hole cards are also shown as a crisp DOM overlay near the action bar (sized for 360 px width), in addition to the 3D cards on the table.
+
+### 25.4 Motion graphics (DOM layer)
+- Using GSAP and the existing Framer Motion: counting chip numbers, pot growth pulses, animated hand-name reveals at showdown, a tension effect during all-in runouts (subtle vignette and heartbeat sound), win banners with restrained particle effects for big pots, smooth screen transitions between menu, setup and table.
+- Restraint is part of realism: no constant flashing, no slot-machine effects.
+
+### 25.5 Sound
+- Replace or extend the SFX with CC0 recordings where they sound more realistic (chip clacks, card slides, felt taps).
+- A quiet CC0 **room ambience** loop (distant murmur, soft music), with its own volume slider, default low.
+- Positional audio per seat (Web Audio `PannerNode`), so a chip push on the left sounds from the left.
+
+---
+
+## 26. Performance budgets for the 3D table
+
+- The **initial route** (menu) keeps the Part I budgets: no 3D code or assets loaded there.
+- **3D download:** ≤ 8 MB for `Baixa`, ≤ 14 MB for `Média`, ≤ 22 MB for `Alta` (all compressed, total for a 9-seat table). Assets are cached by the service worker after the first load.
+- **Per character:** LOD0 ≤ 1.8 MB, LOD1 ≤ 900 KB, LOD2 ≤ 400 KB, including textures.
+- **First table render:** ≤ 6 s on a mid-range phone over 4G, with a progressive loading screen; low-LOD or placeholder characters may appear first and upgrade in place.
+- **Frame rate:** meet the tier targets in 20.4 on the owner's phone and on a mid-range Android profile; no main-thread task > 50 ms during play (asset loading excluded).
+- **Memory:** ≤ 450 MB on mobile at `Alta`; dispose GPU resources when leaving the table.
+- **Draw calls:** ≤ 150 at `Alta` with 9 seats (instancing for chips, texture atlases, merged static geometry).
+- `npm run assets:check` enforces the size budgets; a Playwright performance test records fps and long tasks on a 9-player table and fails on regressions beyond 15%.
+
+---
+
+## 27. Testing for Version 2
+
+- **Renderer parity:** a test plays scripted hands through both renderers' state adapters and asserts they receive identical state and events (the 3D table cannot drift from the engine).
+- **Animation mapping:** unit tests for the event → gesture scheduler, including the timing budget and skip behavior.
+- **No-tells test:** Section 24.5.
+- **Bluff metrics:** Section 18.5.
+- **Visual regression:** Playwright screenshots of the 3D table at 2, 6 and 9 seats, portrait and landscape, per tier, using SwiftShader/WebGL in CI with a fixed seed, fixed animation time and a tolerance threshold.
+- **Asset validation:** `assets:check` in CI.
+- **Real devices:** each phase from V2 on ends with a deployed preview that the owner tests on their phone. Their feedback is recorded in `HANDOFF.md`.
+
+---
+
+## 28. Version 2 phases and acceptance criteria
+
+Work strictly in order. Each phase ends with a green CI, updated docs and a handoff (Part I, Section 1).
+
+**Phase V1 — Bluffing and odds panel.** Section 18 (model, classification module, simulator metrics, tests) and Section 19.
+*Accept:* all 18.2 ranges met in the simulator; 18.5 tests pass; the odds panel starts minimized on a fresh profile and persists its state.
+
+**Phase V2 — 3D technical spike (go/no-go).** R3F table in graybox with 9 seat anchors and both camera framings; the DOM HUD anchored to 3D; quality tiers and auto-downgrade; `2D clássico` fallback; one MPFB2 character generated headless → optimized GLB → seated in the scene with a procedural idle; three short "look" test renders (lighting and grading variations) for the owner to choose from.
+*Accept:* the owner has tested the preview on their phone and chosen a look; the tier targets are met at `Média` on the owner's phone with the graybox scene; the headless character pipeline works from one command; findings in `DECISIONS.md`. If the targets cannot be met, stop and report options before continuing.
+
+**Phase V3 — Environment and props.** Room, table, chips (instanced), cards (atlas), dealer button, baked lighting, HDRI, post-processing per tier, the chip-amount-accurate betting visuals.
+*Accept:* 25.1–25.2 complete; budgets met; visual regression baselines approved by the owner.
+
+**Phase V4 — Characters.** Full roster (23.1), materials (23.2), rig and LODs (23.3), NPC linking and portraits (23.4), "Créditos" screen if any CC-BY asset is used.
+*Accept:* 16+ distinct characters pass `assets:check`; no duplicate at a table; the owner approves the roster from a contact sheet render.
+
+**Phase V5 — Animation.** Layers 24.1, the full mapping in 24.2, the scripted gesture library, IK for chips and cards, optional Mixamo integration from the private repo, the no-tells test.
+*Accept:* every row of 24.2 plays correctly in 2-, 6- and 9-seat games; timing inside the Part I delay budget; 24.4 quality rules pass a manual QA checklist in `docs/QA.md`; the no-tells test passes.
+
+**Phase V6 — Camera, motion graphics and sound.** 25.3–25.5, Settings for "Gráficos" and "Câmera", the user's hole-card overlay, optional user hands.
+*Accept:* all camera modes readable at 360×640; cinematic moments skippable; reduced motion respected; ambience and positional audio working with volume controls.
+
+**Phase V7 — Polish and hardening.** Performance pass against Section 26 on real devices, memory and disposal checks, loading experience, final visual QA, docs (`RULES.md`, `AI.md`, `LICENSES.md`, `QA.md`) updated.
+*Accept:* every Section 26 budget met; all tests green; owner sign-off after a full game on their phone.
+
+**Stretch (only after V7 and only if the owner asks):** a non-playing dealer character who deals with the correct order from Part I 5.3; an optional "tells" mode designed so it stays fair and clearly labeled.
+
+---
+
+## 29. Owner actions (things only the human owner can do)
+
+The agents MUST list any pending owner action at the top of their `HANDOFF.md` entry, with exact instructions.
+
+1. **Before Phase V2:** create the private repository `pokergame-art` on GitHub and give both agents access. (Needed only for Mixamo and other non-redistributable sources.)
+2. **Phase V2:** open the preview on your phone, test it and pick one of the three looks.
+3. **Phases V3–V4:** approve the environment screenshots and the character contact sheet.
+4. **Phase V5 (optional):** with a free Adobe account, download from Mixamo the exact list of animations the agents provide (with the exact export settings), and upload them to `pokergame-art`.
+5. **If an agent reports a blocked download:** download the listed free files and add them where the agent says.
+6. **At the end of every phase:** test the deployed preview on your phone and report what felt wrong.

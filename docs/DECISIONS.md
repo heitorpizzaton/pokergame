@@ -4,6 +4,17 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-028 — AGENTS.md Part II (Version 2) added
+
+- **Date:** 2026-09-26
+- **Context:** the owner provided Part II of the spec (Sections 17–29): a measured bluffing model per style, a three-state odds panel that starts minimized, and a realistic 3D table built with a zero-cost, browser-only, headless asset pipeline.
+- **Decision:** Part II is appended verbatim to `AGENTS.md`, continuing the numbering at Section 17. Where Part II changes a Part I rule, Part II wins. The changed sections are listed in Section 17.3: 7.3, 8.2–8.4, 11, 12 and 14. Phases V1–V7 are added to `PROGRESS.md` and follow Phase 8.
+- **Alternatives considered:** keeping Part II as a separate file. Rejected, because `AGENTS.md` must remain the single source of truth.
+- **Consequences:**
+  - The odds panel default changes from ON to minimized, in Phase V1.
+  - Phase V2 is a go/no-go spike that needs the owner: a phone test and a choice of look.
+  - Owner actions (Section 29) must head every handoff entry while pending.
+
 ## ADR-027 — The shuffle fairness tests share one 0.001 significance budget
 
 - **Date:** 2026-09-25
