@@ -8,6 +8,8 @@ export interface TendencyEstimate {
   /** Aggression factor: (bets + raises) / calls, postflop. */
   readonly aggression: number;
   readonly foldToCbet: number;
+  /** How often the player folds when facing a postflop bet or raise (fold equity, §18.3). */
+  readonly foldToBet: number;
   readonly wentToShowdown: number;
   readonly hands: number;
 }
@@ -22,6 +24,8 @@ class Counters {
   passive = 0;
   cbetsFaced = 0;
   cbetFolds = 0;
+  betsFaced = 0;
+  betFolds = 0;
   sawFlop = 0;
   showdowns = 0;
 }
@@ -83,10 +87,26 @@ export class OpponentModel {
         if (a.kind === 'fold') c.cbetFolds++;
       }
     }
-    for (const a of view.actions.filter((x) => x.street !== 'preflop')) {
-      const c = this.#get(a.seat);
-      if (a.kind === 'bet' || a.kind === 'raise') c.aggressive++;
-      else if (a.kind === 'call') c.passive++;
+    for (const street of ['flop', 'turn', 'river'] as const) {
+      // Each response to a bet or raise counts once per player per street.
+      let facingBet = false;
+      const counted = new Set<number>();
+      for (const a of view.actions.filter((x) => x.street === street)) {
+        const c = this.#get(a.seat);
+        if (facingBet && !counted.has(a.seat) && a.kind !== 'check') {
+          counted.add(a.seat);
+          c.betsFaced++;
+          if (a.kind === 'fold') c.betFolds++;
+        }
+        if (a.kind === 'bet' || a.kind === 'raise') {
+          facingBet = true;
+          counted.clear();
+          counted.add(a.seat);
+          c.aggressive++;
+        } else if (a.kind === 'call') {
+          c.passive++;
+        }
+      }
     }
     for (const h of view.shownHands.filter((h) => h.handNumber === view.handNumber)) {
       this.#get(h.seat).showdowns++;
@@ -101,6 +121,7 @@ export class OpponentModel {
       threeBet: smooth(c.threeBets, c.threeBetOpportunities, 0.06, 10),
       aggression: (c.aggressive + 2 * 1.5) / (c.passive + 2),
       foldToCbet: smooth(c.cbetFolds, c.cbetsFaced, 0.45, 8),
+      foldToBet: smooth(c.betFolds, c.betsFaced, 0.45, 8),
       wentToShowdown: smooth(c.showdowns, c.sawFlop, 0.28, 8),
       hands: c.hands,
     };
