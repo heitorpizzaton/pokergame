@@ -21,7 +21,7 @@ function inTop(percentile: number, width: number, softness = 0.04): number {
 }
 
 /** Relative strength (0 = worst, 1 = best) of every live combo on `board`. */
-function strengthOnBoard(board: readonly Card[], dead: ReadonlySet<number>): Float64Array {
+export function strengthOnBoard(board: readonly Card[], dead: ReadonlySet<number>): Float64Array {
   const values = new Float64Array(ALL_COMBOS.length).fill(-1);
   const live: number[] = [];
   ALL_COMBOS.forEach((c, i) => {
@@ -47,7 +47,7 @@ function strengthOnBoard(board: readonly Card[], dead: ReadonlySet<number>): Flo
 }
 
 /** Flush draws and open-ended straight draws on the flop or turn get extra weight. */
-function hasDraw(a: Card, b: Card, board: readonly Card[]): boolean {
+export function hasDraw(a: Card, b: Card, board: readonly Card[]): boolean {
   if (board.length >= 5) return false;
   const cards = [a, b, ...board];
   for (let suit = 0; suit < 4; suit++) {

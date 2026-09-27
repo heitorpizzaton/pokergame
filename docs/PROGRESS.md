@@ -113,15 +113,15 @@ Phases V1–V7 follow Section 28 and MUST be worked in order. Owner actions are 
 
 ## Phase V1 — Bluffing and odds panel
 
-- [ ] Shared bet classification module `ai/postflop/classify.ts` (value bet, semi-bluff, pure bluff, bluff opportunity) (18.1)
-- [ ] Bluff probability model: `base(style, street) × modifiers` (fold equity, opponents, position, board story, blockers, showdown value, sizing, recent history, tilt, personal multiplier) (18.3)
-- [ ] Bluffing sanity rules (18.4)
-- [ ] Simulator metrics: pure-bluff rate per street, river bluff share, c-bet, bluff success, bluff-raise (18.5)
-- [ ] Style targets for 2, 4 and 9 players in `docs/AI.md` (18.2)
-- [ ] Tests: 18.2 ranges, TAG vs. station/folder bots, Maníaco not adapting, information boundary with bluffing active (18.5)
-- [ ] Odds panel with three states: Desligado / Minimizado (default) / Expandido, remembered between games (19)
-- [ ] e2e: minimized on a fresh profile; expand/minimize persists after reload; off stops display computation (19)
-- [ ] **Accept:** all 18.2 ranges met in the simulator; 18.5 tests pass; the odds panel starts minimized and persists its state
+- [x] Shared bet classification module `ai/postflop/classify.ts` (value bet, semi-bluff, pure bluff, bluff opportunity) (18.1)
+- [x] Bluff probability model: `base(style, street) × modifiers` (fold equity, opponents, position, board story, blockers, showdown value, sizing, recent history, tilt, personal multiplier) (18.3, ADR-029)
+- [x] Bluffing sanity rules (18.4)
+- [x] Simulator metrics: pure-bluff rate per street, river bluff share, c-bet, bluff success, bluff-raise (18.5)
+- [x] Style targets for 2, 4 and 9 players in `docs/AI.md` (18.2)
+- [x] Tests: 18.2 ranges over 100,000 hands, TAG vs. station/folder bots, Maníaco not adapting (`tests/long/ai-bluff.test.ts`, 3/3); modifiers, sanity rules and style ordering in CI (`tests/unit/bluff.test.ts`, `tests/unit/ai.test.ts`); information boundary with bluffing active (18.5)
+- [x] Odds panel with three states: Desligado / Minimizado (default) / Expandido, remembered between games (19)
+- [x] e2e: minimized on a fresh profile; expand/minimize persists after reload; swipe down minimizes; off stops all display computation (`tests/e2e/odds-panel.spec.ts`) (19)
+- [x] **Accept:** all 18.2 ranges met in the simulator (100,000 hands, seed 2027, table in `docs/AI.md`); 18.5 tests pass; the odds panel starts minimized and persists its state
 
 ## Phase V2 — 3D technical spike (go/no-go)
 

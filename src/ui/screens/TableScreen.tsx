@@ -411,6 +411,10 @@ export function TableScreen({
               client={equity}
               pot={potInView(view)}
               fourColor={settings.fourColorDeck}
+              expanded={settings.oddsExpanded}
+              onExpandedChange={(expanded) => {
+                onSettingsChange({ oddsExpanded: expanded });
+              }}
             />
           )}
         {snap.phase === 'userTurn' && view.legal && !snap.away ? (

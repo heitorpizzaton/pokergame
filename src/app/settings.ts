@@ -3,7 +3,10 @@ export type ActionTimer = 'off' | 15 | 20 | 30;
 export type NpcSpeedSetting = 'normal' | 'fast';
 
 export interface Settings {
+  /** Odds panel on/off (AGENTS.md §19). Off: no probability is computed for display. */
   readonly oddsPanel: boolean;
+  /** Odds panel expanded, or minimized to a pill (the default), remembered between games. */
+  readonly oddsExpanded: boolean;
   readonly handHistory: boolean;
   readonly rabbitHunt: boolean;
   readonly actionTimer: ActionTimer;
@@ -22,6 +25,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   oddsPanel: true,
+  oddsExpanded: false,
   handHistory: false,
   rabbitHunt: true,
   actionTimer: 20,
@@ -52,6 +56,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): Settings
     const volume = Number(parsed.volume);
     return {
       oddsPanel: bool('oddsPanel'),
+      oddsExpanded: bool('oddsExpanded'),
       handHistory: bool('handHistory'),
       rabbitHunt: bool('rabbitHunt'),
       actionTimer: timer,

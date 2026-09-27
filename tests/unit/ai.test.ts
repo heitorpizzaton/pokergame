@@ -10,7 +10,7 @@ import { type Card, parseCards } from '../../src/core/cards/index.ts';
 import { PokerEngine } from '../../src/core/engine/index.ts';
 import { SeededRng } from '../../src/core/rng/seeded-rng.ts';
 import type { LegalActions, PlayerAction } from '../../src/core/view/index.ts';
-import { derived, runSim } from '../../scripts/sim-core.ts';
+import { derived, newStats, runSim } from '../../scripts/sim-core.ts';
 import { FakeScheduler } from '../support/fake-scheduler.ts';
 
 const legal = (over: Partial<LegalActions> = {}): LegalActions => ({
@@ -166,22 +166,7 @@ describe('AI behaviour in simulation', () => {
       seed: 21,
       iterations: 150,
     });
-    const d = (k: string) =>
-      derived(
-        result.byKind[k] ?? {
-          hands: 0,
-          vpip: 0,
-          pfr: 0,
-          aggressive: 0,
-          passive: 0,
-          sawFlop: 0,
-          showdowns: 0,
-          netBbs: 0,
-          decisions: 0,
-          decisionMs: 0,
-          maxDecisionMs: 0,
-        },
-      );
+    const d = (k: string) => derived(result.byKind[k] ?? newStats());
     expect(d('nit').vpip).toBeLessThan(d('tag').vpip);
     expect(d('tag').vpip).toBeLessThan(d('lag').vpip);
     expect(d('lag').vpip).toBeLessThan(d('maniac').vpip);
@@ -189,6 +174,19 @@ describe('AI behaviour in simulation', () => {
     expect(d('station').pfr).toBeLessThan(d('tag').pfr);
     expect(d('rec').pfr).toBeLessThan(d('tag').pfr);
     expect(d('maniac').af).toBeGreaterThan(d('station').af);
+    // Bluffing (AGENTS.md §18.2): pooled pure-bluff rate at bluff opportunities.
+    const bluff = (k: string) => {
+      const s = result.byKind[k] ?? newStats();
+      const made = s.pureBluffs.flop + s.pureBluffs.turn + s.pureBluffs.river;
+      const chances =
+        s.pureOpportunities.flop + s.pureOpportunities.turn + s.pureOpportunities.river;
+      return made / Math.max(1, chances);
+    };
+    expect(bluff('maniac')).toBeGreaterThan(bluff('lag'));
+    expect(bluff('lag')).toBeGreaterThan(bluff('tag'));
+    expect(bluff('lag')).toBeGreaterThan(bluff('rec'));
+    expect(bluff('tag')).toBeGreaterThan(bluff('nit'));
+    expect(bluff('rec')).toBeGreaterThan(bluff('station'));
   }, 120_000);
 
   it('uses the full decision budget comfortably at live settings', () => {

@@ -4,6 +4,59 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-27 (session 1, part 13) — Claude — Part II added; Phase V1 bluffing and odds panel
+
+**Owner action needed before Phase V2 (AGENTS.md §29):**
+
+1. Optional: create the private repository `pokergame-art` on GitHub and give the agents access. It is needed only for Mixamo and other non-redistributable sources; Phase V2 can start without it.
+2. After the V2 preview is deployed: open it on your phone, test it, and pick one of the three looks.
+
+**Branch:** `feat/phase-v1-bluffing`.
+
+### Done
+
+- Part II of the spec appended to `AGENTS.md` (PR #15, ADR-028). Phases V1–V7 are in `PROGRESS.md`.
+- **Bluffing (§18, ADR-029):**
+  - `ai/postflop/classify.ts`: calling ranges, value / semi-bluff / pure bluff, bluff opportunities, clean draw outs.
+  - `ai/postflop/bluff.ts`: base × modifiers.
+  - A `bluffing` profile per style, including `passiveValue`, `slowPlay`, `thinValue` and `callOffLeak`, plus `valueRaise`.
+  - `foldToBet` in the opponent model.
+  - The brain keeps a personal multiplier and tracks failed bluffs.
+  - The simulator prints the bluff metrics and has the `callBot` and `folderBot` scripted bots.
+- **Odds panel (§19):** a new `oddsExpanded` setting.
+  - Minimized pill by default.
+  - Expanded panel capped at a third of the screen, with "–" and swipe-down to minimize.
+  - Off computes nothing (e2e counts equity-worker requests).
+
+### Verification
+
+- The seeded games changed (each NPC now draws a personal multiplier at creation). Four table baselines were regenerated in CI (commit `1d3b767`), and the owner still needs to review them.
+- `tests/long/ai-bluff.test.ts`: 3/3 (100,000 hands in about 37 min, plus the bot tests).
+- All §18.2 ranges are met. The measured table is in `docs/AI.md`.
+- `tests/long/ai-sim.test.ts` (Part I VPIP/PFR targets, win rates and exploit bots) was re-run after the AI changes and passes 4/4 (2,956 s).
+
+### Exact next step
+
+- Merge Phase V1 when CI is green.
+- Then Phase V2, the go/no-go spike:
+  1. Check that `bpy` or the Blender tarball and MPFB2 can be downloaded through the network allowlist. If not, list the exact files under "Owner action needed".
+  2. Move the 2D table to `ui/table2d/` behind a `TableRenderer` interface.
+  3. Build the R3F graybox with the tiers and the HUD anchoring.
+
+### Known issues
+
+- The bluff rates depend strongly on table composition (strong styles adapt to fold equity). The Recreativo's river rate and river share only fit together in a narrow window. See "Calibration note" in `docs/AI.md`.
+
+### Verify
+
+```bash
+npm run check
+npx vitest run --config vitest.long.config.ts tests/long/ai-bluff.test.ts
+npm run sim -- --hands 20000 --players 6 --mix random
+```
+
+---
+
 ## 2026-09-25 (session 1, part 12) — Claude — shuffle test significance fix
 
 **Branch:** `fix/shuffle-test-family-alpha`.

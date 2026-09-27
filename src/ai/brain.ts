@@ -2,12 +2,16 @@ import type { Rng } from '../core/rng/index.ts';
 import type { PlayerAction, PlayerView } from '../core/view/index.ts';
 import { OpponentModel } from './model/opponent-model.ts';
 import { estimateRange } from './model/range.ts';
-import { decidePostflop } from './postflop/decide.ts';
+import { callingRange, cleanDrawOuts } from './postflop/classify.ts';
+import { decidePostflop, type DecisionInfo } from './postflop/decide.ts';
 import { equityVsRanges } from './postflop/equity.ts';
 import { decidePreflop } from './ranges/preflop.ts';
 import { sanitize } from './sanity.ts';
 import { STYLES, type StyleId, type StyleProfile } from './styles/styles.ts';
 import { analyse } from './view-analysis.ts';
+
+/** Hands of more careful bluffing after a bluff was shown down and lost (§18.3). */
+const FAILED_BLUFF_HANDS = 3;
 
 export interface BrainOptions {
   /** Monte Carlo samples for postflop equity (fewer in the headless simulator). */
@@ -30,7 +34,10 @@ export class NpcBrain {
   readonly #iterations: number;
   readonly #budgetMs: number;
   readonly #now: () => number;
+  readonly #personal: number;
   #tiltRemaining = 0;
+  #failedBluffRemaining = 0;
+  #bluffedHand = -1;
   #handStartStack = new Map<number, number>();
 
   constructor(seat: number, style: StyleId, rng: Rng, options: BrainOptions = {}) {
@@ -40,13 +47,24 @@ export class NpcBrain {
     this.#iterations = options.iterations ?? 1500;
     this.#budgetMs = options.budgetMs ?? 250;
     this.#now = options.now ?? (() => performance.now());
+    this.#personal = 0.8 + (0.4 * rng.int(1_000_001)) / 1_000_000;
   }
 
   get tilted(): boolean {
     return this.#tiltRemaining > 0;
   }
 
+  /** Persistent bluffing multiplier of this NPC, drawn once in [0.8, 1.2] (§18.3). */
+  get personal(): number {
+    return this.#personal;
+  }
+
   decide(view: PlayerView): PlayerAction {
+    return this.decideWithInfo(view).action;
+  }
+
+  /** The decision plus what the NPC saw, for the simulator statistics (§18.5). */
+  decideWithInfo(view: PlayerView): { action: PlayerAction; info: DecisionInfo | null } {
     const legal = view.legal;
     if (!legal) throw new Error('decide() needs the player to act');
     const spot = analyse(view);
@@ -57,38 +75,65 @@ export class NpcBrain {
     const looseness = this.tilted ? 1.3 : 1;
 
     if (spot.street === 'preflop') {
-      return sanitize(decidePreflop({ spot, style: this.style, looseness, random }), legal);
+      const action = decidePreflop({ spot, style: this.style, looseness, random });
+      return { action: sanitize(action, legal), info: null };
     }
 
     const deadline = this.#now() + this.#budgetMs;
-    const ranges = spot.opponents.map((o) =>
+    const live = spot.opponents;
+    const ranges = live.map((o) =>
       estimateRange(o.seat, view.actions, view.board, spot.hole, this.#model.estimate(o.seat)),
     );
+    // Half the samples against the whole ranges, half against the calling ranges (§18.1).
+    const samples = Math.max(50, Math.round(this.#iterations / 2));
     const equity = equityVsRanges(
       spot.hole,
       view.board,
       ranges,
       this.#rng,
-      this.#iterations,
+      samples,
       deadline,
       this.#now,
     );
-    const draw = hasStrongDraw(spot.hole, view.board);
-    const action = decidePostflop({
+    const callers = ranges.map((r) => callingRange(r, view.board, spot.hole));
+    const equityVsCallers = equityVsRanges(
+      spot.hole,
+      view.board,
+      callers,
+      this.#rng,
+      samples,
+      deadline,
+      this.#now,
+    );
+    const active = live.filter((o) => o.status === 'active');
+    const foldEquity =
+      active.length === 0
+        ? 0
+        : active.reduce((sum, o) => sum + this.#model.estimate(o.seat).foldToBet, 0) /
+          active.length;
+    const { action, info } = decidePostflop({
       spot,
       style: this.style,
       equity,
-      draw,
-      aggression: this.tilted ? 1.35 : 1,
+      equityVsCallers,
+      cleanOuts: cleanDrawOuts(spot.hole, view.board),
+      draw: hasStrongDraw(spot.hole, view.board),
+      tilted: this.tilted,
+      personal: this.#personal,
+      foldEquity,
+      recentFailedBluff: this.#failedBluffRemaining > 0,
+      bluffedThisHand: this.#bluffedHand === view.handNumber,
       random,
     });
-    return sanitize(action, legal);
+    if (info.bluffed && info.betClass === 'pureBluff') this.#bluffedHand = view.handNumber;
+    return { action: sanitize(action, legal), info };
   }
 
   /** Learns from the completed hand's public record and updates tilt. */
   observeHandEnd(view: PlayerView): void {
     this.#model.observeHand(view);
     if (this.#tiltRemaining > 0) this.#tiltRemaining--;
+    if (this.#failedBluffRemaining > 0) this.#failedBluffRemaining--;
     const start = this.#handStartStack.get(view.handNumber);
     this.#handStartStack.delete(view.handNumber);
     const me = view.seats[this.seat];
@@ -96,6 +141,13 @@ export class NpcBrain {
     const lost = start - me.stack;
     if (this.style.tiltHands > 0 && lost >= start * 0.5 && lost >= 25 * view.bigBlind) {
       this.#tiltRemaining = this.style.tiltHands;
+    }
+    // A bluff that was shown down and lost makes careful players bluff less for a few hands.
+    const shown = view.shownHands.some(
+      (h) => h.handNumber === view.handNumber && h.seat === this.seat,
+    );
+    if (this.#bluffedHand === view.handNumber && shown && lost > 0) {
+      this.#failedBluffRemaining = FAILED_BLUFF_HANDS;
     }
   }
 

@@ -71,3 +71,50 @@
 .advanced summary {
   color: var(--color-text-muted);
 }
+
+/* Minimized (the default, AGENTS.md §19): a small pill above the action bar. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: center;
+  width: auto !important;
+  min-height: 44px;
+  margin: 0 auto var(--space-1);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 999px;
+  background: var(--color-glass-strong);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  animation: pillIn calc(var(--duration-fade) * var(--anim-scale)) var(--ease-out) both;
+}
+
+.minimize {
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: var(--space-1);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-glass);
+  color: var(--color-text);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.panel {
+  /* Expanded: never more than a third of the screen, so the table stays readable. */
+  max-height: 34dvh;
+  overflow-y: auto;
+  touch-action: pan-x pan-y;
+  animation: pillIn calc(var(--duration-fade) * var(--anim-scale)) var(--ease-out) both;
+}
+
+@keyframes pillIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
