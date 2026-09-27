@@ -109,6 +109,34 @@ export const coreImportRestrictions = {
 } satisfies Linter.RulesRecord;
 
 /**
+ * AGENTS.md §20.2: the 3D renderer is a view. It never decides anything about the game, so it
+ * cannot reach the engine, the AI or the equity code; it draws the controller's public snapshot.
+ */
+export const table3dImportRestrictions = {
+  'no-restricted-imports': [
+    'error',
+    {
+      patterns: [
+        seededRngPattern,
+        {
+          group: [
+            '**/core/engine',
+            '**/core/engine/**',
+            '**/core/equity',
+            '**/core/equity/**',
+            '**/ai',
+            '**/ai/**',
+            '**/workers',
+            '**/workers/**',
+          ],
+          message: 'The 3D table is a view: no poker logic may enter it (AGENTS.md §20.2).',
+        },
+      ],
+    },
+  ],
+} satisfies Linter.RulesRecord;
+
+/**
  * AGENTS.md §2.7 / §15: user-facing strings live in `src/i18n`. JSX text containing letters is
  * rejected in UI code; render strings from the i18n module instead.
  */
@@ -173,6 +201,15 @@ export default defineConfig(
   {
     files: ['src/core/**/*.ts'],
     rules: coreImportRestrictions,
+  },
+  {
+    files: ['src/ui/table3d/**/*.{ts,tsx}'],
+    rules: {
+      ...table3dImportRestrictions,
+      // three.js scene objects are mutable by design: React Three Fiber code mutates cameras,
+      // bones and materials inside effects and frame callbacks (ADR-030).
+      'react-hooks/immutability': 'off',
+    },
   },
   {
     files: ['src/ai/**/*.ts'],
