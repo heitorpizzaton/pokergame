@@ -88,6 +88,10 @@ export default function Table3D(props: TableStageProps) {
           onCreated={({ gl }) => {
             setupRenderer(gl, look);
             gl.domElement.addEventListener('webglcontextlost', onFailure, { once: true });
+            // The e2e build exposes render statistics (draw calls, triangles) to the tests.
+            if (import.meta.env.MODE === 'e2e') {
+              (window as unknown as { mesaViva3d?: WebGLRenderer }).mesaViva3d = gl;
+            }
           }}
         >
           <Scene {...props} look={look} />

@@ -79,6 +79,20 @@ test('an explicit tier renders the 3D table with the DOM HUD anchored to it', as
     }
   }
 
+  // AGENTS.md §26: at most 150 draw calls with 9 seats (measured here at Baixa, no shadows).
+  const stats = await page.evaluate(() => {
+    const gl = (
+      window as unknown as {
+        mesaViva3d?: { info: { render: { calls: number; triangles: number } } };
+      }
+    ).mesaViva3d;
+    return gl ? { ...gl.info.render } : null;
+  });
+  expect(stats).not.toBeNull();
+  testInfo.annotations.push({ type: 'render', description: JSON.stringify(stats) });
+  console.log(`3D render stats (${testInfo.project.name}): ${JSON.stringify(stats)}`);
+  expect(stats?.calls ?? 0).toBeLessThanOrEqual(150);
+
   // The game still plays: fold and reach the next hand.
   await page.getByRole('button', { name: strings.actions.fold }).click();
   await expect(page.getByTestId('hand-number')).not.toHaveText(strings.table.handNumber(1), {
