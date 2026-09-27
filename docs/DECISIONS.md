@@ -4,6 +4,71 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-030 — Phase V2 3D spike: renderer split, headless character pipeline, findings
+
+- **Date:** 2026-09-27
+- **Context:** Part II Phase V2 is a go/no-go spike for a realistic 3D table in the browser, with zero cost, no GPU on the owner's PC and a public repository (§17.2).
+- **Decision (architecture):**
+  - **Renderer contract** (`ui/table/renderer.ts`): both renderers receive the controller's public `TableSnapshot` and output only visuals.
+    - The DOM HUD (seats, bets, chip flights, pot, board, banners) moved from `TableScreen` into `ui/table/TableLayer.tsx`. It is shared by both renderers and positioned from a `TableLayout` (percent positions per visual slot, plus the centre).
+    - The 2D table is `ui/table2d/` (`Felt`, `seat-layout.ts`) and is unchanged pixel for pixel.
+    - The 3D table (`ui/table3d/`) projects nine 3D anchors to that layout in one batched pass per rendered frame, and reports only when something moved.
+  - **Choosing a renderer** (`chooseRenderer`, unit-tested):
+    - Without WebGL2, the table is always 2D.
+    - `Automático` also uses 2D on software renderers (SwiftShader, llvmpipe) and at detect-gpu tier 0; tiers 1/2/3 map to Baixa/Média/Alta, and an unknown GPU starts at Baixa.
+    - An explicit tier is honoured whenever WebGL2 exists.
+    - A WebGL failure or a lost context falls back to 2D with a toast.
+    - This is why CI (SwiftShader) keeps testing the 2D table by default. The 3D tests pick a tier explicitly.
+  - **GPU benchmarks:** detect-gpu's benchmark tables are bundled (lazy chunks under `assets/gpu/`) instead of being fetched from its default CDN.
+  - **Lazy loading:** the 3D code is a `React.lazy` chunk under `assets/3d/`.
+    - That chunk, the benchmarks and the models are excluded from the service worker's precache and cached on first use (CacheFirst).
+    - `npm run budget` now also fails if three.js reaches the initial route or the precache.
+    - The initial JS is 117.9 KB gzipped (it was about 115 KB). The 3D chunk is 267 KB gzipped.
+  - **Quality tiers** (`table3d/quality.ts`): pixel-ratio cap, antialiasing, shadows and LOD per §20.4.
+    - `FrameMonitor` lowers the tier one step after 3 s under 90% of its target frame rate. It never raises it.
+    - Idle stretches reset the monitor's window instead of counting as slow frames.
+    - The Canvas is keyed by tier, because antialiasing cannot change on a live context.
+  - **Idle rendering:** `frameloop="demand"`, with an rAF driver that invalidates at full rate while the table animates and at 20 fps while waiting for the user or paused.
+  - **Camera:** the "Jogador" framing is solved rather than hand-tuned (`playerCamera`).
+    - A fixed elevation is used (56° portrait, 34° landscape).
+    - A binary search on distance keeps every seat label and every seated head inside ±90% of the view, with extra bottom room for the user's cards above the odds pill.
+    - A unit test checks the hand-written projection against three.js.
+  - **Lint rules:**
+    - `src/ui/table3d/**` may not import the engine, the equity code, the AI or the workers.
+    - `react-hooks/immutability` is off there only, because three.js objects are mutated in effects and frame callbacks by design.
+- **Decision (asset pipeline, §22):**
+  - **bpy:** `bpy==5.0.1` from PyPI, which needs Python 3.11 (the environment has 3.11.15).
+  - **MPFB2:** cloned at commit `3edf9df` (MPFB 2.0.17) by `scripts/assets/setup.sh` into `tools/`, which Git ignores.
+    - A pinned clone rather than a submodule, so CI and Pages never fetch the 74 MB of data.
+    - MPFB runs as a Blender extension through a private `BLENDER_USER_RESOURCES` folder (`bl_ext.user_default.mpfb`).
+  - **Character build:** `art/scripts/build_character.py` builds a roster entry headless.
+    - Body: macros plus face targets, baked.
+    - Rig: the "game_engine" rig (53 bones). The helper geometry is removed except the eyeballs.
+    - Material slots come from bone weights (top, bottom, shoes, skin) plus a geometric scalp region (buzz cut).
+    - The legs and arms are posed seated and applied as the rest pose. The spine and head stay neutral so the facial morphs stay aligned.
+    - Ten morph targets come from MPFB's CC0 expression units (blinks, smile, frown, brows, squints).
+  - **Optimization:** `scripts/assets/optimize.ts` (gltf-transform + meshoptimizer) welds, simplifies to three LODs, quantizes and applies meshopt compression.
+    - `npm run assets:characters` is the one command.
+  - **Registry:** `docs/LICENSES.md` is the registry. `npm run assets:check` (in CI) enforces it: every shipped file registered, allowed licenses only, per-LOD size budgets and gltf-validator with zero errors.
+- **Findings (go/no-go inputs):**
+  - **Pipeline:** the headless pipeline works end to end with no GPU. A character builds in about 20 s on CPU.
+  - **Sizes:** LOD0 20k triangles in 177 KB, LOD1 8.5k in 108 KB, LOD2 3.6k in 76 KB. That is far below the §26 budgets (1.8 MB / 900 KB / 400 KB), because no textures are shipped yet.
+  - **Render cost:** 9 seats at Baixa cost 76 draw calls and 31.6k triangles (measured by the e2e test).
+    - Each character is 6 primitives (one per material slot).
+    - With shadows (Média/Alta), the shadow pass roughly doubles the draw calls. Phase V3/V4 must merge a character to 1–2 primitives (vertex-colour or atlas materials) to keep Alta within 150.
+  - **MakeHuman asset packs are blocked:** the asset server (skins, eyes, hair, clothes) returns 403 from this environment. Clothing is therefore approximated by material regions on the body mesh, and hair is a scalp region.
+    - Phase V4 needs either scripted clothing and hair (for example, offset shells of body regions and generated hair cards) or the owner downloading the CC0 system-asset packs (listed in HANDOFF).
+  - **Facial motion:** MPFB's expression units export cleanly as glTF morph targets and drive blinks at runtime. Face bones are not needed.
+  - **Frame rates on real phones are not measurable here.** CI renders with SwiftShader. The Média target on the owner's phone is part of the owner's acceptance test.
+- **Alternatives considered:**
+  - **One `Html` portal per seat label** (drei): rejected. It costs a React render per label per frame, and drei is not needed yet.
+  - **Rendering the look tests in Blender Cycles:** rejected. The owner must choose a look for the web renderer, so the looks are rendered from the real web scene (`npm run looks`, Playwright screenshots).
+  - **A git submodule for MPFB2:** rejected (see above).
+- **Consequences:**
+  - The 3D table is the default on capable phones as soon as this merges, with a graybox room and one character reused per seat with different outfits.
+  - `2D clássico` stays one tap away in Settings.
+  - Phase V3 starts only after the owner's phone test and look choice.
+
 ## ADR-029 — Measured bluffing model and the three-state odds panel (Phase V1)
 
 - **Date:** 2026-09-27
