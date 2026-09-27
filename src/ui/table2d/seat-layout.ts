@@ -3,10 +3,9 @@
  * the user at the bottom centre (AGENTS.md §5.1); the others follow clockwise, which on screen
  * is bottom → left → top → right. Logical seat order is unaffected.
  */
-export interface SeatPosition {
-  readonly x: number;
-  readonly y: number;
-}
+import type { SeatPosition, TableLayout } from '../table/renderer.ts';
+
+export type { SeatPosition };
 
 export function seatPositions(
   count: number,
@@ -21,30 +20,12 @@ export function seatPositions(
   });
 }
 
-/** Visual slot of a logical seat so that the user's seat lands in slot 0. */
-export function visualSlot(seat: number, userSeat: number, count: number): number {
-  return (seat - userSeat + count) % count;
-}
-
 /** Centre of the table in the same percentage coordinates as the seats. */
 export function tableCenter(orientation: 'portrait' | 'landscape'): SeatPosition {
   return { x: 50, y: orientation === 'portrait' ? 47 : 46 };
 }
 
-/**
- * Where a seat's bet sits: on the betting line between the seat and the centre. The user's large
- * hole cards reach further into the table, so the user's bet sits closer to the centre.
- */
-export function betPosition(
-  seat: SeatPosition,
-  center: SeatPosition,
-  isUser = false,
-): SeatPosition {
-  const t = isUser ? 0.6 : 0.4;
-  return { x: seat.x + (center.x - seat.x) * t, y: seat.y + (center.y - seat.y) * t };
-}
-
-/** Where the pot's chips sit, just above the board (approximately; flights aim here). */
-export function potPosition(center: SeatPosition): SeatPosition {
-  return { x: center.x, y: center.y - 9 };
+/** The 2D renderer's layout: fixed positions per table size (AGENTS.md §11.2). */
+export function layout2d(count: number, orientation: 'portrait' | 'landscape'): TableLayout {
+  return { seats: seatPositions(count, orientation), center: tableCenter(orientation) };
 }
