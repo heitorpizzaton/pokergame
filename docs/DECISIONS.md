@@ -4,6 +4,27 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-029 — Measured bluffing model and the three-state odds panel (Phase V1)
+
+- **Date:** 2026-09-27
+- **Context:** Part II Section 18 asks for explicit, measured bluffing per style. Section 19 asks for an odds panel that starts minimized.
+- **Decision:**
+  - **Shared classification:** `ai/postflop/classify.ts` is used by the AI and by the simulator statistics.
+    - The "calling range" is operationalized as the stronger half, by current hand strength, of each opponent's estimated range, plus draws.
+    - Equity vs. that range comes from a second Monte Carlo run. The per-decision sample budget is split in half between the two runs, so decisions stay as fast as before.
+  - **Measured rates:** the §18.2 rates are defined operationally in `docs/AI.md`. For example, the pure-bluff rate is pure bluffs ÷ opportunities whose hand is a pure bluff.
+  - **Calibration:** the rates are calibrated on the realistic random mix at 6 players and 100 BB, the same table as the Part I VPIP/PFR targets. Rates depend strongly on the opponents: strong styles adapt to fold equity by design. On a one-of-each table (always a Maníaco and a Pagador), the TAG bluffs noticeably less.
+  - **Opponent model:** it gains `foldToBet`, one count per player per street after a bet or raise. This feeds the fold-equity modifier.
+  - **Style parameters:** `cbet`, `bluff` and `semiBluffRaise` are replaced by a `bluffing` profile per style: base rates per street, modifier sensitivities, sizing, and bounded leaks. There is also a `passiveValue` rate: passive styles check some value hands, which keeps their c-bet frequency realistic.
+  - **Odds panel:** state is kept as the existing on/off `oddsPanel` plus a new `oddsExpanded` (default false), so saved settings stay compatible. "Minimizado" is a 44 px pill with the equity. "Expandido" is the full panel, capped at a third of the screen, closed with "–" or a swipe down.
+- **Alternatives considered:**
+  - A calling range from a fixed percentile of all hands: this ignores what the opponent's actions showed.
+  - Calibrating on a fixed one-of-each table: this is unrealistic, and the Maníaco would dominate every pot.
+  - A three-valued `oddsPanel` setting: this would break stored settings and the header on/off switch.
+- **Consequences:**
+  - The information-boundary test runs with the bluff model active, since it is part of the brain.
+  - The rates are asserted over 100,000 hands in `tests/long/ai-bluff.test.ts`, which is part of the manual long workflow. CI checks the style ordering and every modifier and sanity rule quickly.
+
 ## ADR-028 — AGENTS.md Part II (Version 2) added
 
 - **Date:** 2026-09-26
