@@ -31,6 +31,7 @@ jobs:
       - run: npm run test
       - run: npm run build
       - run: npm run budget
+      - run: npm run assets:check
 
   e2e:
     name: End-to-end (Playwright)

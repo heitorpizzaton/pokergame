@@ -1,0 +1,33 @@
+{
+  "$comment": "Character roster (AGENTS.md §23.1). Every parameter is explicit; the build is deterministic. Phase V2 ships one character to validate the pipeline; Phase V4 grows this to 16+.",
+  "version": 1,
+  "characters": [
+    {
+      "id": "c01",
+      "presentation": "masculine",
+      "age": 38,
+      "macros": {
+        "gender": 1.0,
+        "age": 0.62,
+        "muscle": 0.55,
+        "weight": 0.58,
+        "height": 0.55,
+        "proportions": 0.6,
+        "race": { "african": 0.35, "asian": 0.05, "caucasian": 0.6 }
+      },
+      "targets": {
+        "head/head-square": 0.35,
+        "chin/chin-width-incr": 0.3,
+        "nose/nose-width1-incr": 0.25,
+        "eyebrows/eyebrows-trans-down": 0.2,
+        "cheek/l-cheek-bones-incr": 0.2,
+        "cheek/r-cheek-bones-incr": 0.26,
+        "mouth/mouth-angles-down": 0.1
+      },
+      "skin": "#9a6a4f",
+      "hair": { "style": "buzz", "color": "#1e1712" },
+      "outfit": { "top": "#2f3b4c", "bottom": "#23252b", "shoes": "#15120f" },
+      "eyes": "#4a3222"
+    }
+  ]
+}

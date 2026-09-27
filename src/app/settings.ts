@@ -1,6 +1,15 @@
 /** User settings (AGENTS.md §11.7), persisted in localStorage. */
 export type ActionTimer = 'off' | 15 | 20 | 30;
 export type NpcSpeedSetting = 'normal' | 'fast';
+/** Table renderer and quality (AGENTS.md §20.3). */
+export type GraphicsSetting = 'auto' | 'high' | 'medium' | 'low' | '2d';
+export const GRAPHICS_SETTINGS: readonly GraphicsSetting[] = [
+  'auto',
+  'high',
+  'medium',
+  'low',
+  '2d',
+];
 
 export interface Settings {
   /** Odds panel on/off (AGENTS.md §19). Off: no probability is computed for display. */
@@ -21,6 +30,7 @@ export interface Settings {
   readonly volume: number;
   readonly haptics: boolean;
   readonly reducedMotion: boolean;
+  readonly graphics: GraphicsSetting;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -39,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   volume: 70,
   haptics: true,
   reducedMotion: false,
+  graphics: 'auto',
 };
 
 const STORAGE_KEY = 'mesa-viva:settings';
@@ -72,6 +83,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): Settings
         : DEFAULT_SETTINGS.volume,
       haptics: bool('haptics'),
       reducedMotion: bool('reducedMotion'),
+      graphics: GRAPHICS_SETTINGS.find((g) => g === parsed.graphics) ?? DEFAULT_SETTINGS.graphics,
     };
   } catch {
     return DEFAULT_SETTINGS;

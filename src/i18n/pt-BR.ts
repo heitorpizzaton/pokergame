@@ -91,6 +91,14 @@ export const ptBR = {
     volume: 'Volume',
     haptics: 'Vibração',
     reducedMotion: 'Reduzir animações',
+    graphics: 'Gráficos',
+    graphicsOptions: {
+      auto: 'Automático',
+      high: 'Alta',
+      medium: 'Média',
+      low: 'Baixa',
+      '2d': '2D clássico',
+    },
   },
   setup: {
     title: 'Nova partida',
@@ -123,6 +131,9 @@ export const ptBR = {
     },
   },
   table: {
+    graphicsLowered: (tier: string) => `Qualidade gráfica ajustada para ${tier}`,
+    graphicsFallback: 'Gráficos 3D indisponíveis neste aparelho. Usando a mesa 2D.',
+    loading3d: 'Carregando mesa 3D…',
     handNumber: (n: number) => `Mão ${n}`,
     blindsLabel: (sb: number, bb: number) => `Blinds ${formatChips(sb)}/${formatChips(bb)}`,
     pause: 'Pausar',

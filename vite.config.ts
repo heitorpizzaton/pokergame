@@ -38,10 +38,35 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
+        // The 3D table's code, GPU benchmark tables and models are not precached: the menu must
+        // not download them (AGENTS.md §20.2). They are cached on first use instead (§26).
+        globIgnores: ['assets/3d/**', 'assets/gpu/**'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/(3d|gpu)\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'mesa-viva-3d',
+              expiration: { maxEntries: 200 },
+            },
+          },
+        ],
       },
     }),
   ],
   build: {
     target: 'es2022',
+    // three.js is ~270 KB gzipped, loaded only with the 3D table.
+    chunkSizeWarningLimit: 1100,
+    rolldownOptions: {
+      output: {
+        chunkFileNames: (chunk) => {
+          const id = chunk.facadeModuleId ?? '';
+          if (id.includes('detect-gpu/dist/benchmarks')) return 'assets/gpu/[name]-[hash].js';
+          if (id.includes('/src/ui/table3d/')) return 'assets/3d/[name]-[hash].js';
+          return 'assets/[name]-[hash].js';
+        },
+      },
+    },
   },
 });
