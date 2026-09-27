@@ -219,6 +219,8 @@ export const ptBR = {
     title: 'Probabilidades',
     expand: 'Mostrar detalhes',
     collapse: 'Ocultar detalhes',
+    pill: (pct: string) => `Equity ${pct}`,
+    minimize: 'Minimizar probabilidades',
     equityVsRandom: 'Equity vs. mãos aleatórias',
     opponents: (n: number) => `${n} ${n === 1 ? 'oponente' : 'oponentes'}`,
     win: 'Vitória',
