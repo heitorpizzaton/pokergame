@@ -4,6 +4,7 @@
  * without freezeout end-game effects); brains keep learning across hands.
  */
 import { NpcBrain, randomStyles, type StyleId } from '../src/ai/index.ts';
+import type { DecisionInfo } from '../src/ai/postflop/decide.ts';
 import {
   EngineError,
   type EngineEvent,
@@ -13,7 +14,7 @@ import {
 import { SeededRng } from '../src/core/rng/seeded-rng.ts';
 import type { PlayerAction, PlayerView } from '../src/core/view/index.ts';
 
-export type BotId = 'allInBot' | 'foldBot';
+export type BotId = 'allInBot' | 'foldBot' | 'callBot' | 'folderBot';
 export type SeatKind = StyleId | BotId;
 
 export interface SimOptions {
@@ -27,7 +28,12 @@ export interface SimOptions {
   readonly bigBlind?: number;
   readonly stackBbs?: number;
   /** Called after every NPC decision (tests use it to check sanity rules). */
-  readonly onDecision?: (view: PlayerView, action: PlayerAction, kind: SeatKind) => void;
+  readonly onDecision?: (
+    view: PlayerView,
+    action: PlayerAction,
+    kind: SeatKind,
+    info: DecisionInfo | null,
+  ) => void;
 }
 
 export interface KindStats {
@@ -42,6 +48,22 @@ export interface KindStats {
   decisions: number;
   decisionMs: number;
   maxDecisionMs: number;
+  /** Bluffing statistics (AGENTS.md §18.5), per street where it applies. */
+  pureOpportunities: StreetCounts;
+  pureBluffs: StreetCounts;
+  riverBets: number;
+  riverPureBluffs: number;
+  cbetSpots: number;
+  cbets: number;
+  bluffRaiseOpportunities: number;
+  bluffRaises: number;
+  pureBluffWins: number;
+}
+
+export interface StreetCounts {
+  flop: number;
+  turn: number;
+  river: number;
 }
 
 export interface SimResult {
@@ -50,7 +72,7 @@ export interface SimResult {
   readonly illegalActions: number;
 }
 
-function newStats(): KindStats {
+export function newStats(): KindStats {
   return {
     hands: 0,
     vpip: 0,
@@ -63,6 +85,36 @@ function newStats(): KindStats {
     decisions: 0,
     decisionMs: 0,
     maxDecisionMs: 0,
+    pureOpportunities: { flop: 0, turn: 0, river: 0 },
+    pureBluffs: { flop: 0, turn: 0, river: 0 },
+    riverBets: 0,
+    riverPureBluffs: 0,
+    cbetSpots: 0,
+    cbets: 0,
+    bluffRaiseOpportunities: 0,
+    bluffRaises: 0,
+    pureBluffWins: 0,
+  };
+}
+
+/** Bluffing rates (§18.2): see docs/AI.md for the exact definitions. */
+export function bluffStats(s: KindStats) {
+  const rate = (a: number, b: number) => a / Math.max(1, b);
+  return {
+    pureFlop: rate(s.pureBluffs.flop, s.pureOpportunities.flop),
+    pureTurn: rate(s.pureBluffs.turn, s.pureOpportunities.turn),
+    pureRiver: rate(s.pureBluffs.river, s.pureOpportunities.river),
+    riverBluffShare: rate(s.riverPureBluffs, s.riverBets),
+    cbet: rate(s.cbets, s.cbetSpots),
+    bluffRaise: rate(s.bluffRaises, s.bluffRaiseOpportunities),
+    bluffSuccess: rate(s.pureBluffWins, s.pureBluffs.flop + s.pureBluffs.turn + s.pureBluffs.river),
+    samples: {
+      flop: s.pureOpportunities.flop,
+      turn: s.pureOpportunities.turn,
+      river: s.pureOpportunities.river,
+      riverBets: s.riverBets,
+      cbetSpots: s.cbetSpots,
+    },
   };
 }
 
@@ -86,6 +138,15 @@ function botAction(kind: BotId, view: PlayerView): PlayerAction {
     if (legal.canBet || legal.canRaise) return { type: 'allIn' };
     return legal.canCheck ? { type: 'check' } : { type: 'call' };
   }
+  if (kind === 'folderBot') {
+    // Sees every flop, then folds to any bet (maximum fold equity for the NPCs).
+    if (legal.canCheck) return { type: 'check' };
+    return view.street === 'preflop' ? { type: 'call' } : { type: 'fold' };
+  }
+  if (kind === 'callBot') {
+    // A scripted calling station: never bets or raises, calls every bet.
+    return legal.canCheck ? { type: 'check' } : { type: 'call' };
+  }
   return legal.canCheck ? { type: 'check' } : { type: 'fold' };
 }
 
@@ -104,7 +165,7 @@ export function runSim(options: SimOptions): SimResult {
   const assign = (handIndex: number): void => {
     kinds = options.seats === 'random' ? randomStyles(players, mixRng) : [...options.seats];
     brains = kinds.map((kind, seat) =>
-      kind === 'allInBot' || kind === 'foldBot'
+      kind === 'allInBot' || kind === 'foldBot' || kind === 'callBot' || kind === 'folderBot'
         ? null
         : new NpcBrain(seat, kind, new SeededRng(seed * 1000 + handIndex * 10 + seat), {
             iterations: options.iterations ?? 250,
@@ -139,6 +200,7 @@ export function runSim(options: SimOptions): SimResult {
     };
     const engine = PokerEngine.restore(snapshot, deckRng);
     const events: EngineEvent[] = engine.dispatch({ type: 'startHand' });
+    const pendingBluffs: { seat: number; index: number }[] = [];
     const start = engine.state.hand?.button;
     if (start !== undefined) button = start;
 
@@ -149,10 +211,35 @@ export function runSim(options: SimOptions): SimResult {
       const kind = kinds[seat] as SeatKind;
       const brain = brains[seat];
       const t0 = performance.now();
-      const action = brain ? brain.decide(view) : botAction(kind as BotId, view);
+      const decision = brain ? brain.decideWithInfo(view) : null;
+      const action = decision ? decision.action : botAction(kind as BotId, view);
       const ms = performance.now() - t0;
-      options.onDecision?.(view, action, kind);
+      options.onDecision?.(view, action, kind, decision?.info ?? null);
       const stats = (byKind[kind] ??= newStats());
+      const info = decision?.info;
+      if (info) {
+        const aggressive =
+          action.type === 'bet' || action.type === 'raise' || action.type === 'allIn';
+        if (info.opportunity && info.betClass === 'pureBluff') {
+          stats.pureOpportunities[info.street]++;
+          if (aggressive) {
+            stats.pureBluffs[info.street]++;
+            pendingBluffs.push({ seat, index: engine.state.hand?.actions.length ?? 0 });
+          }
+        }
+        if (info.street === 'river' && aggressive) {
+          stats.riverBets++;
+          if (info.betClass === 'pureBluff') stats.riverPureBluffs++;
+        }
+        if (info.cbetSpot) {
+          stats.cbetSpots++;
+          if (aggressive) stats.cbets++;
+        }
+        if (info.opportunity && info.facingBet) {
+          stats.bluffRaiseOpportunities++;
+          if (aggressive && info.bluffed) stats.bluffRaises++;
+        }
+      }
       stats.decisions++;
       stats.decisionMs += ms;
       stats.maxDecisionMs = Math.max(stats.maxDecisionMs, ms);
@@ -174,6 +261,20 @@ export function runSim(options: SimOptions): SimResult {
 
     // Statistics per seat.
     const actions = engine.state.hand?.actions ?? [];
+    // A pure bluff succeeds when nobody calls or raises it and everyone else folds.
+    for (const bluff of pendingBluffs) {
+      const after = actions.slice(bluff.index + 1);
+      const answered = after.some(
+        (a) =>
+          a.seat !== bluff.seat && (a.kind === 'call' || a.kind === 'bet' || a.kind === 'raise'),
+      );
+      const players = engine.state.hand?.players ?? [];
+      const alone = players.every((p) => p === null || p.seat === bluff.seat || p.folded);
+      if (!answered && alone) {
+        const k = kinds[bluff.seat] as SeatKind;
+        (byKind[k] ??= newStats()).pureBluffWins++;
+      }
+    }
     kinds.forEach((kind, seat) => {
       const s = (byKind[kind] ??= newStats());
       s.hands++;
