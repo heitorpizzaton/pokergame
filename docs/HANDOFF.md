@@ -30,6 +30,7 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ### Verification
 
+- The seeded games changed (each NPC now draws a personal multiplier at creation). Four table baselines were regenerated in CI (commit `1d3b767`), and the owner still needs to review them.
 - `tests/long/ai-bluff.test.ts`: 3/3 (100,000 hands in about 37 min, plus the bot tests).
 - All §18.2 ranges are met. The measured table is in `docs/AI.md`.
 - `tests/long/ai-sim.test.ts` (Part I VPIP/PFR targets, win rates and exploit bots) was re-run after the AI changes and passes 4/4 (2,956 s).
