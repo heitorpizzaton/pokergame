@@ -4,6 +4,26 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-030 — The Phase V2 3D table is discarded (owner decision)
+
+- **Date:** 2026-09-29
+- **Context:** Phase V2 (PR #17) shipped a graybox 3D table as the default renderer on capable devices. It used three.js and React Three Fiber, one character generated headless with Blender + MPFB2, quality tiers, auto-downgrade and a 2D fallback. The owner tested it and rejected the direction: it "did not look good" and felt like a mid-end game rather than a website.
+- **Decision:**
+  - Revert the whole merge of PR #17 (`git revert -m 1 3c5ac08`). The code is now identical to `main` before the spike (`4dc3904`): no three.js, no "Gráficos" setting, no asset pipeline, no `public/assets/`.
+  - Withdraw AGENTS.md Part II goal 3, Sections 20–27 and Phases V2–V7 (new §17.4). Phase V1 (bluffing, odds panel) stays.
+  - The next visual work waits for the owner to choose a new direction, closer to a modern website.
+- **What the spike showed (useful if 3D ever returns):**
+  - A headless Blender (`bpy` 5.0.1, Python 3.11) + MPFB2 pipeline works with no GPU. Characters are 76–177 KB per LOD with meshopt.
+  - The MakeHuman asset server (clothes, hair, skins) is blocked from the agents' environment, so characters lacked real clothing and hair. That was a large part of the poor look.
+  - Seat labels anchored to projected 3D points work well. Solving the camera distance to fit all seats handles every aspect ratio.
+  - CI renders WebGL with SwiftShader, so real-phone frame rates cannot be verified in CI.
+- **Alternatives considered:**
+  - **Keep 3D behind a setting (off by default):** rejected. The owner asked to go back to how it was before, and keeping it would retain about 270 KB of 3D code, an asset pipeline and extra tests for a direction nobody wants.
+  - **Revert by hand:** rejected. A merge revert is exact and keeps history.
+- **Consequences:**
+  - The spike stays in Git history (merge `3c5ac08`, branch `feat/phase-v2-3d-spike`) and is not maintained.
+  - The deployed site returns to the 2D table.
+
 ## ADR-029 — Measured bluffing model and the three-state odds panel (Phase V1)
 
 - **Date:** 2026-09-27

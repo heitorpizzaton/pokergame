@@ -4,6 +4,38 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-09-29 (session 1, part 15) — Claude — 3D table discarded, back to the 2D table
+
+**Owner action needed:**
+
+1. Choose the new visual direction ("more like a website than a mid-end game"). The agent proposed options in the chat. Once chosen, it gets written into `AGENTS.md` as a new section with phases before any work starts.
+
+**Branch:** `revert/phase-v2-3d`.
+
+### Done
+
+- The owner tested the Phase V2 preview and rejected the 3D table.
+- The merge of PR #17 was reverted (`git revert -m 1 3c5ac08`). The code is identical to `main` before the spike (`4dc3904`, verified with an empty `git diff`). three.js, the "Gráficos" setting, the asset pipeline, `public/assets/` and the 3D tests are gone.
+- `AGENTS.md` §17.4 records the decision: Sections 20–27 and Phases V2–V7 are withdrawn. Phase V1 (bluffing, odds panel) stays.
+- ADR-030 records what the spike showed, in case 3D ever returns. `PROGRESS.md` is updated.
+
+### Half-done / known issues
+
+- The Part I owner items are still pending: review the visual-regression baselines and the QA checklist in `docs/QA.md`.
+
+### Exact next step
+
+- Wait for the owner's choice of visual direction.
+- Write it into `AGENTS.md` as a new section with phases and acceptance criteria, log it in `DECISIONS.md`, then start on a new branch.
+- Do not start any withdrawn Part II phase (V2–V7).
+
+### Verification
+
+- `npm run check` (the same suite as before the spike).
+- `git diff 4dc3904 -- src tests package.json` shows no differences.
+
+---
+
 ## 2026-09-27 (session 1, part 13) — Claude — Part II added; Phase V1 bluffing and odds panel
 
 **Owner action needed before Phase V2 (AGENTS.md §29):**
