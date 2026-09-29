@@ -10,7 +10,7 @@ import {
   opponentStyles,
 } from '../../app/setup.ts';
 import { formatBigBlinds, formatChips, strings } from '../../i18n/index.ts';
-import { seatPositions } from '../table2d/seat-layout.ts';
+import { seatPositions } from '../table/seat-layout.ts';
 import styles from './Screens.module.css';
 
 interface Props {

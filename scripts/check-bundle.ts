@@ -42,16 +42,6 @@ console.log(`${(total / 1024).toFixed(1).padStart(7)} KB gz  initial JS (budget 
 
 const errors: string[] = [];
 if (total > INITIAL_JS_BUDGET) errors.push('Initial JS is over the 350 KB gzipped budget.');
-// AGENTS.md §20.2: the 3D renderer is a lazy chunk, never part of the initial route or the
-// service worker's precache (three.js marks its bundle with __THREE__).
-const threeInInitial = initial.filter((path) => readFileSync(path, 'utf8').includes('__THREE__'));
-if (threeInInitial.length > 0)
-  errors.push(`three.js in the initial route: ${threeInInitial.join(', ')}`);
-const sw = all.find((path) => basename(path) === 'sw.js');
-// Precache entries look like {url:"assets/…"}; the runtime-caching regex is not an entry.
-if (sw && /url:"[^"]*assets\/(3d|gpu)\//.test(readFileSync(sw, 'utf8'))) {
-  errors.push('The service worker precaches 3D assets.');
-}
 const leaked = all.filter(
   (path) => /\.(js|html)$/.test(path) && readFileSync(path, 'utf8').includes(SEEDED_MARKER),
 );

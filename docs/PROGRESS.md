@@ -125,15 +125,15 @@ Phases V1–V7 follow Section 28 and MUST be worked in order. Owner actions are 
 
 ## Phase V2 — 3D technical spike (go/no-go)
 
-- [x] `TableRenderer` interface; 2D table moved to `ui/table2d/` with no behavior change (20.2)
-- [x] R3F graybox table, 9 seat anchors, portrait and landscape framing (20, 25.3)
-- [x] DOM HUD anchored to projected 3D points (20.2)
-- [x] "Gráficos" setting, quality tiers, auto-downgrade, `2D clássico` fallback, idle rendering (20.3–20.4)
-- [x] 3D code and assets lazy-loaded; initial route budget unchanged (20.2, 26)
-- [x] Headless Blender + MPFB2 pipeline: one character → optimized GLB → seated with a procedural idle (22, 23)
-- [x] `docs/LICENSES.md` and `npm run assets:check` (21.2)
-- [x] Three "look" test renders for the owner (`docs/looks/`)
-- [~] **Accept:** one-command pipeline and findings (ADR-030) done; waiting for the owner: tested the preview on their phone and chose a look; `Média` targets met on the owner's phone; one-command character pipeline; findings in `DECISIONS.md`
+- [ ] `TableRenderer` interface; 2D table moved to `ui/table2d/` with no behavior change (20.2)
+- [ ] R3F graybox table, 9 seat anchors, portrait and landscape framing (20, 25.3)
+- [ ] DOM HUD anchored to projected 3D points (20.2)
+- [ ] "Gráficos" setting, quality tiers, auto-downgrade, `2D clássico` fallback, idle rendering (20.3–20.4)
+- [ ] 3D code and assets lazy-loaded; initial route budget unchanged (20.2, 26)
+- [ ] Headless Blender + MPFB2 pipeline: one character → optimized GLB → seated with a procedural idle (22, 23)
+- [ ] `docs/LICENSES.md` and `npm run assets:check` (21.2)
+- [ ] Three "look" test renders for the owner
+- [ ] **Accept:** owner tested the preview on their phone and chose a look; `Média` targets met on the owner's phone; one-command character pipeline; findings in `DECISIONS.md`
 
 ## Phase V3 — Environment and props
 

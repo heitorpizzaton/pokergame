@@ -1,10 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import {
-  type ActionTimer,
-  GRAPHICS_SETTINGS,
-  type Settings,
-  type SettingsStore,
-} from '../../app/settings.ts';
+import type { ActionTimer, Settings, SettingsStore } from '../../app/settings.ts';
 import { strings } from '../../i18n/index.ts';
 import styles from './Screens.module.css';
 
@@ -60,24 +55,6 @@ export function SettingsScreen({
           <Toggle store={store} field="rabbitHunt" label={t.rabbitHunt} />
           <Toggle store={store} field="handHistory" label={t.handHistory} />
           <Toggle store={store} field="showNpcStyles" label={t.showNpcStyles} />
-          <label className={styles.toggle}>
-            <span>{t.graphics}</span>
-            <select
-              className={styles.select}
-              value={settings.graphics}
-              data-testid="graphics-setting"
-              onChange={(e) => {
-                const value = GRAPHICS_SETTINGS.find((g) => g === e.target.value);
-                if (value) store.update({ graphics: value });
-              }}
-            >
-              {GRAPHICS_SETTINGS.map((g) => (
-                <option key={g} value={g}>
-                  {t.graphicsOptions[g]}
-                </option>
-              ))}
-            </select>
-          </label>
         </fieldset>
 
         <fieldset className={styles.field}>
