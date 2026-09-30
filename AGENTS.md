@@ -464,6 +464,12 @@ Work strictly in order. Each phase ends with a green CI, updated docs and a hand
 - **12 (performance budgets):** the 3D table gets its own budgets. The initial route budget is unchanged (Section 26).
 - **14 (phases):** new phases V1–V7 are added after Phase 8 (Section 28).
 
+### 17.4 Owner decision (2026-09-29): the 3D table is withdrawn
+- After testing the Phase V2 preview, the owner **discarded the realistic 3D table**. Goal 3 of Section 17.1, Sections 20–27, Phases V2–V7 in Section 28 and the 3D-related owner actions in Section 29 **no longer apply**. Do not start any of them.
+- The 2D table is again the only renderer. Sections 18 and 19 (Phase V1, bluffing and the odds panel) remain in force.
+- The owner wants a new visual direction that feels **more like a modern website than a mid-end game**. It will be specified here, as a new section, before any work on it starts (see `docs/HANDOFF.md`).
+- The spike's code stays recoverable at commit `3c5ac08` (see ADR-030 in `docs/DECISIONS.md`).
+
 ---
 
 ## 18. NPC bluffing model

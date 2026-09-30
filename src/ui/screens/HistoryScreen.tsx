@@ -13,8 +13,7 @@ import {
 import { formatChips, handName, strings } from '../../i18n/index.ts';
 import { PlayingCard } from '../table/PlayingCard.tsx';
 import { Seat } from '../table/Seat.tsx';
-import { visualSlot } from '../table/hud-layout.ts';
-import { seatPositions, tableCenter } from '../table2d/seat-layout.ts';
+import { seatPositions, tableCenter, visualSlot } from '../table/seat-layout.ts';
 import { FairnessPanel } from './FairnessPanel.tsx';
 import styles from './Screens.module.css';
 import tableStyles from './TableScreen.module.css';

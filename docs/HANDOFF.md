@@ -4,82 +4,35 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
-## 2026-09-27 (session 1, part 14) — Claude — Phase V2 3D spike (waiting for the owner)
+## 2026-09-29 (session 1, part 15) — Claude — 3D table discarded, back to the 2D table
 
-**Owner action needed (AGENTS.md §29, Phase V2 acceptance):**
+**Owner action needed:**
 
-1. **Test the preview on your phone.**
-   - Open https://heitorpizzaton.github.io/pokergame/ after this branch merges.
-   - Start a 9-player game. The 3D table appears automatically on a capable phone.
-   - To force a quality level, go to Configurações → Gráficos and choose Alta, Média or Baixa. Please try **Média**.
-   - Report how smooth it feels, and whether any seat, card or button is hard to read or covered.
-2. **Pick one of the three looks.** Add `?look=a`, `?look=b` or `?look=c` to the address (for example, `https://heitorpizzaton.github.io/pokergame/?look=b`), or compare the renders in `docs/looks/`:
-   - `a`: "Clássico quente" (warm pendant light, brown room).
-   - `b`: "Noir" (a tight cone of light, dark room).
-   - `c`: "Esmeralda moderna" (brighter, teal ambience).
-3. **Optional, for Phase V4 (clothes, hair, skins):** the MakeHuman asset server is blocked (HTTP 403) in the agents' environment. If you can, download these free CC0 packs from the MakeHuman community site (static.makehumancommunity.org, "Asset packs" page) and upload them to the private `pokergame-art` repository (or tell the agents where they are):
-   - `makehuman_system_assets` (skins, eyes, eyebrows, eyelashes, teeth);
-   - the CC0 clothes packs;
-   - the CC0 hair packs.
-     Without them, Phase V4 generates clothing and hair by script (lower quality, but it works).
-4. Still pending from earlier phases: review the visual-regression baselines, and the QA items in `docs/QA.md`.
+1. Choose the new visual direction ("more like a website than a mid-end game"). The agent proposed options in the chat. Once chosen, it gets written into `AGENTS.md` as a new section with phases before any work starts.
 
-**Branch:** `feat/phase-v2-3d-spike`. Stop here: Phase V3 starts only after the owner's phone test and look choice (§28).
+**Branch:** `revert/phase-v2-3d`.
 
-### Done (ADR-030 has the details and findings)
+### Done
 
-- **Renderer split:**
-  - `ui/table/renderer.ts` is the contract.
-  - `ui/table/TableLayer.tsx` is the shared DOM HUD.
-  - `ui/table2d/` holds the unchanged 2D table.
-  - `ui/table3d/` holds the new 3D table (lazy chunk).
-- **3D table (graybox):**
-  - Oval table and nine chair anchors, with solved "Jogador" framings for portrait and landscape.
-  - Seat labels are projected from 3D anchors.
-  - Three looks (`?look=`).
-  - Characters: one generated character per occupied seat (different outfits), with a procedural idle (breathing, sway, looking at the player to act, blinks via morph targets).
-- **Settings → Gráficos:**
-  - Options: Automático (default), Alta, Média, Baixa, 2D clássico.
-  - Detection uses detect-gpu, with its bundled benchmarks.
-  - A software renderer or missing WebGL2 falls back to 2D.
-  - Auto-downgrade after 3 s under target, with a toast.
-  - 20 fps idle rendering.
-- **Asset pipeline:**
-  - `npm run assets:setup` installs bpy 5.0.1 and MPFB2 at a pinned commit.
-  - `npm run assets:characters` is the one command that goes roster → Blender → GLB → LOD0/1/2.
-  - `docs/LICENSES.md` is the registry; `npm run assets:check` runs in CI.
-- **Tests and checks:**
-  - `tests/unit/table3d.test.ts`: renderer choice, frame monitor, anchors, framing and projection.
-  - `tests/e2e/table3d.spec.ts`:
-    - no 3D downloads on the menu or setup screens;
-    - Automático falls back to 2D on SwiftShader;
-    - an explicit tier renders 3D with 9 non-overlapping, on-screen seat labels and ≤ 150 draw calls;
-    - 2D clássico loads nothing 3D.
-  - `npm run looks` renders `docs/looks/`.
+- The owner tested the Phase V2 preview and rejected the 3D table.
+- The merge of PR #17 was reverted (`git revert -m 1 3c5ac08`). The code is identical to `main` before the spike (`4dc3904`, verified with an empty `git diff`). three.js, the "Gráficos" setting, the asset pipeline, `public/assets/` and the 3D tests are gone.
+- `AGENTS.md` §17.4 records the decision: Sections 20–27 and Phases V2–V7 are withdrawn. Phase V1 (bluffing, odds panel) stays.
+- ADR-030 records what the spike showed, in case 3D ever returns. `PROGRESS.md` is updated.
 
 ### Half-done / known issues
 
-- **Placeholders:**
-  - Clothing is material regions on the body mesh (the collar edge is jagged).
-  - Hair is a scalp region with a blocky edge.
-  - One character is reused for every seat. Phase V4 replaces all three with the roster.
-- **Draw calls:** each character is 6 primitives. It is fine at Baixa (76 calls), but Alta with shadows needs merged primitives (Phase V3/V4).
-- **Occlusion:** in landscape, the two players next to the user are large in the foreground. Revisit with the owner's feedback (camera height, or smaller near-seat characters).
-- **Local visual tests:** three landscape visual-regression shots differ on this machine for `main` as well (local fonts). CI baselines are authoritative.
-- **Frame rates:** not measurable without a real GPU (CI uses SwiftShader). This is the owner's acceptance test.
+- The Part I owner items are still pending: review the visual-regression baselines and the QA checklist in `docs/QA.md`.
 
 ### Exact next step
 
-- Merge Phase V2 when CI is green, so Pages deploys the preview.
-- Then wait for the owner's phone feedback and look choice.
-- Record both here and in ADR-030.
-- If the Média target is missed on the owner's phone, stop and report options (fewer primitives, LOD2 at Média, a lower pixel ratio, no shadows at Média) before Phase V3.
+- Wait for the owner's choice of visual direction.
+- Write it into `AGENTS.md` as a new section with phases and acceptance criteria, log it in `DECISIONS.md`, then start on a new branch.
+- Do not start any withdrawn Part II phase (V2–V7).
 
 ### Verification
 
-- `npm run check`: 324 unit tests, 160 e2e, 2 perf, initial JS 117.9 KB, assets check.
-- `npm run assets:setup && npm run assets:characters` rebuilds `public/assets/3d/characters/`.
-- `npm run looks` re-renders the look images.
+- `npm run check` (the same suite as before the spike).
+- `git diff 4dc3904 -- src tests package.json` shows no differences.
 
 ---
 

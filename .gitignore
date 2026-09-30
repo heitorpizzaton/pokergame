@@ -9,8 +9,3 @@ blob-report/
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
-# Asset pipeline tools (installed by scripts/assets/setup.sh, never committed)
-tools/mpfb2
-tools/venv
-tools/blender-user
-art/build/

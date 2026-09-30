@@ -109,7 +109,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done and tested. Phases follow 
 
 # Version 2 (AGENTS.md Part II, Sections 17–29)
 
-Phases V1–V7 follow Section 28 and MUST be worked in order. Owner actions are listed in Section 29.
+Phase V1 is done. Phases V2–V7 were withdrawn by the owner (AGENTS.md §17.4).
 
 ## Phase V1 — Bluffing and odds panel
 
@@ -123,54 +123,10 @@ Phases V1–V7 follow Section 28 and MUST be worked in order. Owner actions are 
 - [x] e2e: minimized on a fresh profile; expand/minimize persists after reload; swipe down minimizes; off stops all display computation (`tests/e2e/odds-panel.spec.ts`) (19)
 - [x] **Accept:** all 18.2 ranges met in the simulator (100,000 hands, seed 2027, table in `docs/AI.md`); 18.5 tests pass; the odds panel starts minimized and persists its state
 
-## Phase V2 — 3D technical spike (go/no-go)
+## Phases V2–V7 — withdrawn by the owner (2026-09-29)
 
-- [x] `TableRenderer` interface; 2D table moved to `ui/table2d/` with no behavior change (20.2)
-- [x] R3F graybox table, 9 seat anchors, portrait and landscape framing (20, 25.3)
-- [x] DOM HUD anchored to projected 3D points (20.2)
-- [x] "Gráficos" setting, quality tiers, auto-downgrade, `2D clássico` fallback, idle rendering (20.3–20.4)
-- [x] 3D code and assets lazy-loaded; initial route budget unchanged (20.2, 26)
-- [x] Headless Blender + MPFB2 pipeline: one character → optimized GLB → seated with a procedural idle (22, 23)
-- [x] `docs/LICENSES.md` and `npm run assets:check` (21.2)
-- [x] Three "look" test renders for the owner (`docs/looks/`)
-- [~] **Accept:** one-command pipeline and findings (ADR-030) done; waiting for the owner: tested the preview on their phone and chose a look; `Média` targets met on the owner's phone; one-command character pipeline; findings in `DECISIONS.md`
+The realistic 3D table was discarded after the owner tested the Phase V2 preview (AGENTS.md §17.4, ADR-030). None of the Phase V2–V7 tasks will be done. The spike's code is recoverable at commit `3c5ac08`.
 
-## Phase V3 — Environment and props
+## Next — new visual direction (to be specified)
 
-- [ ] Room, table, instanced chips, card atlas, dealer button and blind markers (25.1)
-- [ ] Baked lighting, HDRI, tone mapping, post-processing per tier (25.2)
-- [ ] Chip-amount-accurate betting visuals
-- [ ] **Accept:** 25.1–25.2 complete; budgets met; visual baselines approved by the owner
-
-## Phase V4 — Characters
-
-- [ ] Roster of 16+ distinct characters from `art/characters/roster.json` (23.1)
-- [ ] Skin, eye and cloth materials (23.2)
-- [ ] Shared rig, facial motion, three LODs (23.3)
-- [ ] NPC linking, name pools per character, portraits for the 2D fallback (23.4)
-- [ ] "Créditos" screen if any CC-BY asset is used (21.1)
-- [ ] **Accept:** 16+ characters pass `assets:check`; no duplicates at a table; owner approves the contact sheet
-
-## Phase V5 — Animation
-
-- [ ] Animation layers: seated pose, procedural idle, gestures, IK (24.1)
-- [ ] Every event → gesture row in 24.2
-- [ ] Scripted gesture library under `art/scripts/anim/` (24.3); optional Mixamo integration
-- [ ] Quality rules and reduced motion (24.4)
-- [ ] No-tells test and timing inside the Part I delay budget (24.5)
-- [ ] **Accept:** every 24.2 row plays in 2-, 6- and 9-seat games; timing in budget; manual QA passes; no-tells test passes
-
-## Phase V6 — Camera, motion graphics and sound
-
-- [ ] Camera modes Jogador / Aérea / Cinemática, readable at 360×640, cinematic moments (25.3)
-- [ ] User hole-card DOM overlay; optional user hands (25.3)
-- [ ] Motion graphics with GSAP (25.4)
-- [ ] CC0 SFX, room ambience with its own volume, positional audio (25.5)
-- [ ] **Accept:** all camera modes readable at 360×640; cinematic moments skippable; reduced motion respected; ambience and positional audio with volume controls
-
-## Phase V7 — Polish and hardening
-
-- [ ] Performance pass against Section 26 on real devices; memory and disposal checks
-- [ ] Loading experience; final visual QA
-- [ ] Docs updated: `RULES.md`, `AI.md`, `LICENSES.md`, `QA.md`
-- [ ] **Accept:** every Section 26 budget met; all tests green; owner sign-off after a full game on their phone
+- [ ] Owner chooses a direction that feels more like a modern website than a game; the agent writes it into `AGENTS.md` as a new section with phases and acceptance criteria
