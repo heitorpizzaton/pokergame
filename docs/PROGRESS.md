@@ -135,5 +135,5 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 - [x] Every screen restyled flat: menu, setup, table, action bar, odds panel, summary, history and replayer, settings, guide, fairness panel; new app icon (30.1)
 - [x] No casino styling left, and no hardcoded colors in component styles (`tests/unit/theme.test.ts`)
 - [x] axe checks pass in both themes on every screen (`tests/e2e/a11y.spec.ts`)
-- [~] Visual regression baselines for portrait/landscape × light/dark regenerated in CI
+- [x] Visual regression baselines for portrait/landscape × light/dark regenerated in CI (commit `908adc6`)
 - [ ] **Accept:** the owner approves the deployed preview on their phone
