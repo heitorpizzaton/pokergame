@@ -69,6 +69,7 @@ export const ptBR = {
     back: 'Voltar',
     reset: 'Restaurar padrões',
     sections: {
+      appearance: 'Aparência',
       table: 'Mesa',
       help: 'Ajuda e informações',
       time: 'Tempo',
@@ -91,6 +92,8 @@ export const ptBR = {
     volume: 'Volume',
     haptics: 'Vibração',
     reducedMotion: 'Reduzir animações',
+    theme: 'Tema',
+    themeOptions: { auto: 'Automático', light: 'Claro', dark: 'Escuro' },
   },
   setup: {
     title: 'Nova partida',

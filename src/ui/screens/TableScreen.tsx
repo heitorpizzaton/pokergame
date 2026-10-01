@@ -186,8 +186,8 @@ export function TableScreen({
           controller.skipWait();
         }}
       >
-        <div className={styles.felt} aria-hidden="true">
-          <div className={styles.feltLine} />
+        <div className={styles.tableSurface} aria-hidden="true">
+          <div className={styles.bettingLine} />
         </div>
 
         {snap.commitment && (

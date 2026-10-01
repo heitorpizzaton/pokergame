@@ -5,7 +5,7 @@
   overflow: hidden;
 }
 
-/* ---- Header (glass HUD) ---------------------------------------------------------------- */
+/* ---- Header ---------------------------------------------------------------------------- */
 
 .header {
   position: relative;
@@ -16,10 +16,8 @@
   gap: var(--space-2);
   padding: calc(var(--space-1) + var(--safe-top)) calc(var(--space-2) + var(--safe-right))
     var(--space-1) calc(var(--space-2) + var(--safe-left));
-  background: linear-gradient(180deg, rgb(0 0 0 / 45%), rgb(0 0 0 / 15%));
-  border-bottom: 1px solid rgb(255 255 255 / 6%);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .headerInfo {
@@ -34,7 +32,8 @@
 }
 
 .blinds {
-  color: var(--color-gold-light);
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .headerButtons {
@@ -46,9 +45,9 @@
 .textButton {
   min-width: 44px;
   min-height: 44px;
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-glass);
+  background: var(--color-surface);
   color: var(--color-text);
   font-weight: 700;
   transition: background calc(var(--duration-fade) * var(--anim-scale));
@@ -56,7 +55,7 @@
 
 .iconButton:hover,
 .textButton:hover {
-  background: var(--color-glass-hover);
+  background: var(--color-surface-hover);
 }
 
 .textButton {
@@ -69,9 +68,9 @@
 }
 
 .toggleOn {
-  border-color: var(--color-gold);
-  color: var(--color-gold-light);
-  box-shadow: inset 0 0 12px rgb(217 184 101 / 25%);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
 }
 
 /* ---- Table ---------------------------------------------------------------------------- */
@@ -85,59 +84,25 @@
   container-type: size;
 }
 
-/*
- * Wooden rail (border box) around the felt (padding box), with a gold inlay. Depth comes from
- * gradients rather than large blurred box-shadows, which are costly to repaint on every frame
- * (AGENTS.md §12: no main-thread task over 50 ms).
- */
-.felt {
+/* The table: a flat, lightly tinted surface with a thin border (AGENTS.md §30.1). */
+.tableSurface {
   position: absolute;
   inset: 11% 13% 13%;
-  border: 14px solid transparent;
+  border: 1px solid var(--color-table-border);
   border-radius: 46% / 36%;
-  background:
-    radial-gradient(ellipse at 50% 45%, transparent 55%, rgb(0 0 0 / 45%) 100%) padding-box,
-    var(--texture-noise) padding-box,
-    radial-gradient(
-        ellipse at 50% 42%,
-        var(--color-felt-light) 0%,
-        var(--color-felt) 55%,
-        var(--color-felt-deep) 100%
-      )
-      padding-box,
-    linear-gradient(
-        160deg,
-        var(--color-rail-light),
-        var(--color-rail) 30%,
-        var(--color-rail-dark) 70%,
-        var(--color-rail) 100%
-      )
-      border-box;
-  box-shadow:
-    inset 0 0 0 1px rgb(243 217 139 / 45%),
-    0 0 0 1px rgb(0 0 0 / 60%);
+  background: var(--color-table);
 }
 
-/* The table's shadow on the floor: a soft radial gradient, painted once. */
-.felt::before {
-  content: '';
-  position: absolute;
-  inset: -12% -8% -18%;
-  z-index: -1;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 55%, rgb(0 0 0 / 55%) 40%, transparent 70%);
-}
-
-.landscape .felt {
+.landscape .tableSurface {
   inset: 9% 7% 11%;
   border-radius: 38% / 46%;
 }
 
-/* The betting line: a faint gold ellipse inside the rail. */
-.feltLine {
+/* The betting line: a faint ellipse inside the table edge. */
+.bettingLine {
   position: absolute;
   inset: 11%;
-  border: 1px solid var(--color-felt-line);
+  border: 1px dashed var(--color-table-line);
   border-radius: inherit;
 }
 
@@ -174,9 +139,9 @@
 .slot {
   width: 40px;
   height: 56px;
-  border: 1px dashed rgb(243 217 139 / 22%);
-  border-radius: 7px;
-  background: rgb(0 0 0 / 12%);
+  border: 1px dashed var(--color-table-line);
+  border-radius: 6px;
+  background: transparent;
 }
 
 /* The burn card slides from the dealer to the muck, then fades. */
@@ -187,9 +152,7 @@
   width: 22px;
   height: 31px;
   border-radius: 4px;
-  background:
-    repeating-linear-gradient(45deg, var(--color-card-back-line) 0 1px, transparent 1px 5px),
-    linear-gradient(150deg, var(--color-card-back-a), var(--color-card-back-b));
+  background: var(--color-card-back-a);
   box-shadow: inset 0 0 0 1.5px var(--color-card-face);
   opacity: 0;
   animation: burn calc(700ms * var(--anim-scale)) var(--ease-out) both;
@@ -233,8 +196,10 @@
 
 .pot {
   padding: 1px 8px;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: rgb(0 0 0 / 45%);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
 }
@@ -313,13 +278,12 @@
   gap: 2px;
   max-width: 100%;
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-gold);
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-accent);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, rgb(30 24 10 / 88%), rgb(8 8 6 / 88%));
-  box-shadow:
-    0 0 24px rgb(217 184 101 / 30%),
-    var(--shadow-soft);
-  color: var(--color-gold-light);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-deep);
+  color: var(--color-text);
   font-size: 0.85rem;
   font-weight: 700;
   text-align: center;
@@ -327,9 +291,7 @@
 }
 
 .runoutBanner {
-  border-color: var(--color-timer-warning);
-  color: var(--color-text);
-  box-shadow: 0 0 24px rgb(255 107 87 / 30%);
+  border-top-color: var(--color-warning);
 }
 
 .tapHint {
@@ -341,7 +303,7 @@
 @keyframes toast {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(6px);
   }
 }
 
@@ -377,7 +339,8 @@
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--color-timer-warning);
   border-radius: var(--radius-md);
-  background: rgb(0 0 0 / 70%);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
   font-size: 0.8rem;
 }
 
@@ -411,17 +374,15 @@
   display: grid;
   place-items: center;
   padding: var(--space-4);
-  background: rgb(0 0 0 / 55%);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--color-overlay);
 }
 
 .dialog {
   width: min(100%, 360px);
   padding: var(--space-6);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgb(16 44 38 / 96%), rgb(8 24 21 / 96%));
+  background: var(--color-surface);
   box-shadow: var(--shadow-deep);
 }
 
@@ -434,7 +395,7 @@
   display: flex;
   gap: var(--space-4);
   margin: 0 0 var(--space-4);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
@@ -457,23 +418,31 @@
   min-height: 48px;
   border: none;
   border-radius: var(--radius-md);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .primary {
-  background: linear-gradient(180deg, var(--color-gold-light), var(--color-gold));
-  color: #1b1405;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.primary:hover {
+  background: var(--color-accent-hover);
 }
 
 .secondary {
-  background: var(--color-glass);
+  background: var(--color-surface);
   color: var(--color-text);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border-strong);
+}
+
+.secondary:hover {
+  background: var(--color-surface-hover);
 }
 
 .danger {
-  background: var(--color-action-fold);
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-on-danger);
 }
 
 /* ---- Short landscape screens (phones on their side): controls move to a side column ---- */

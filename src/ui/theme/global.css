@@ -8,8 +8,8 @@
 }
 
 html {
-  background: var(--color-room);
-  color-scheme: dark;
+  background: var(--color-bg);
+  accent-color: var(--color-accent);
 }
 
 html,
@@ -23,9 +23,7 @@ body {
   overflow-x: hidden;
   font-family: var(--font-ui);
   color: var(--color-text);
-  background:
-    radial-gradient(ellipse at 50% 30%, var(--color-room-light) 0%, var(--color-room) 70%) fixed,
-    var(--color-room);
+  background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
@@ -42,7 +40,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-gold-light);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 

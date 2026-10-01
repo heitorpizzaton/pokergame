@@ -467,7 +467,7 @@ Work strictly in order. Each phase ends with a green CI, updated docs and a hand
 ### 17.4 Owner decision (2026-09-29): the 3D table is withdrawn
 - After testing the Phase V2 preview, the owner **discarded the realistic 3D table**. Goal 3 of Section 17.1, Sections 20–27, Phases V2–V7 in Section 28 and the 3D-related owner actions in Section 29 **no longer apply**. Do not start any of them.
 - The 2D table is again the only renderer. Sections 18 and 19 (Phase V1, bluffing and the odds panel) remain in force.
-- The owner wants a new visual direction that feels **more like a modern website than a mid-end game**. It will be specified here, as a new section, before any work on it starts (see `docs/HANDOFF.md`).
+- The owner wants a new visual direction that feels **more like a modern website than a mid-end game**. It is specified in Section 30 (clean web app, light and dark themes).
 - The spike's code stays recoverable at commit `3c5ac08` (see ADR-030 in `docs/DECISIONS.md`).
 
 ---
@@ -788,3 +788,33 @@ The agents MUST list any pending owner action at the top of their `HANDOFF.md` e
 4. **Phase V5 (optional):** with a free Adobe account, download from Mixamo the exact list of animations the agents provide (with the exact export settings), and upload them to `pokergame-art`.
 5. **If an agent reports a blocked download:** download the listed free files and add them where the agent says.
 6. **At the end of every phase:** test the deployed preview on your phone and report what felt wrong.
+
+---
+
+## 30. Visual direction: clean web app (owner decision, 2026-10-01)
+
+Chosen by the owner after the 3D table was withdrawn (Section 17.4). **This section replaces Part I Section 11.1** ("modern casino"). Where Part I mentions felt, wood, gold, glassmorphism or noise textures, this section wins. Layout (11.2), the action bar (11.3), animation semantics (11.4), sound (11.5), language (11.6) and screens (11.7) still apply.
+
+### 30.1 Look and feel
+- The game should look like a **well-made modern web application**, not a casino or a video game: neutral backgrounds, flat surfaces, thin borders, soft shadows used sparingly, generous spacing and clear typography.
+- **No** gold accents, glassmorphism, blur, felt or wood textures, noise, glows or heavy gradients.
+- **One accent color** (a calm green or teal, the only nod to the poker table), used for primary actions, focus, the active player and winning highlights. Status colors are used only for meaning (error, warning, success).
+- **Table:** a flat rounded surface (an oval or rounded rectangle) in a lightly tinted neutral, with a 1 px border. Seats are compact cards (avatar, name, stack, status) around it. The board and pot sit in the middle.
+- **Cards:** clean, flat playing cards with large indices and a simple, original back (a solid accent color with a subtle geometric pattern). The four-color option stays.
+- **Chips:** simple flat chips. Denomination colors (Part I 11.1) stay, but are muted to fit the palette.
+- **Typography:** the existing self-hosted geometric sans (Manrope), with tabular numerals for amounts.
+- Motion stays (it is feedback), but is shorter and subtler: fades and short slides, no bouncy or glowing effects.
+
+### 30.2 Themes
+- **Light and dark themes**, both first-class. Settings → **"Tema"**: `Automático` (default, follows the device), `Claro`, `Escuro`. The choice is persisted.
+- All colors come from semantic design tokens in `ui/theme` (background, surface, raised surface, border, text, muted text, accent, accent text, status colors, table, cards, chips), defined once per theme. Components MUST NOT hardcode colors.
+- Both themes meet WCAG AA contrast for text and controls. The axe accessibility e2e checks run in both themes.
+
+### 30.3 Constraints
+- This is a **visual** change only. The engine, AI, equity, rules, i18n strings and behavior do not change. Existing e2e tests must keep passing without being loosened.
+- Budgets from Part I Section 12 still apply (initial JS under 350 KB gzipped; no new runtime dependencies are needed).
+- 360×640 portrait remains the primary target; no horizontal scrolling at any size.
+
+### 30.4 Phase W1 — Web-app redesign
+Semantic tokens with light and dark themes; the "Tema" setting; every screen (menu, setup, table, summary, history and replayer, settings, guide, fairness panel) restyled per 30.1; visual regression baselines regenerated for both themes.
+*Accept:* `npm run check` green; axe checks pass in both themes; no casino styling left (no gold tokens, `backdrop-filter`, noise or felt textures in the code); visual baselines regenerated in CI; **the owner approves the deployed preview on their phone**.

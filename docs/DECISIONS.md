@@ -4,6 +4,41 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-031 — Clean web-app visual direction with light and dark themes (Phase W1)
+
+- **Date:** 2026-10-01
+- **Context:** after the 3D table was discarded (ADR-030), the owner asked for a look "more like a website than a mid-end game". They chose the clean web-app option, with light and dark themes. AGENTS.md §30 now replaces Part I §11.1 ("modern casino").
+- **Decision:**
+  - **Semantic tokens** in `ui/theme/tokens.css`: background, surface, sunken surface, border, text, muted text, overlay, one accent (green), status colors, table, cards, chips, shadows and avatar tones.
+    - The light theme is the `:root` default.
+    - The dark values appear twice, once under `[data-theme='dark']` and once under a `prefers-color-scheme: dark` media query for `Automático`. A unit test keeps the two blocks identical.
+    - `light-dark()` was not used: it needs Safari 17.5+.
+  - **Removed** gold, glass (`backdrop-filter`), felt, rail and noise. The table is a flat, lightly tinted oval with a 1 px border and a dashed betting line.
+    - Seats are bordered cards. Avatars are soft tints of the player's hue with a dark initial (the reverse in dark mode).
+    - The card back is a solid accent with a fine lattice. Chips are flat with a neutral edge.
+    - Actions: fold is neutral, call is soft accent, bet/raise is solid accent.
+  - **Folded seats** use muted colors and a dashed border instead of `opacity`, which failed AA contrast once axe could measure the flat backgrounds.
+  - **The "Tema" setting** (Automático / Claro / Escuro):
+    - `app/theme.ts` sets `data-theme` and the `theme-color` meta tags.
+    - A tiny inline script in `index.html` applies a pinned theme before the first paint (no flash).
+    - The PWA manifest and the icons use the new accent (a white spade on green).
+- **Guards and tests:**
+  - `tests/unit/theme.test.ts`:
+    - the dark blocks stay in sync;
+    - every color the UI reads is defined;
+    - no blur, glass, gold, felt, rail or noise tokens remain;
+    - no hardcoded colors in component styles.
+  - `tests/e2e/a11y.spec.ts` runs axe in both themes on every screen.
+  - `tests/e2e/theme.spec.ts` checks that Automático follows the device and that a pinned theme persists.
+  - Visual regression now has portrait/landscape × light/dark projects.
+- **Alternatives considered:**
+  - **Refining the 2D casino look:** rejected by the owner.
+  - **A layout without a table** (players as a list): rejected by the owner.
+  - **CSS-in-JS theming:** rejected. CSS variables need no runtime and no new dependency.
+- **Consequences:**
+  - The game logic, i18n strings (apart from the new setting) and behavior are unchanged.
+  - All visual baselines change and must be regenerated in CI and approved by the owner.
+
 ## ADR-030 — The Phase V2 3D table is discarded (owner decision)
 
 - **Date:** 2026-09-29

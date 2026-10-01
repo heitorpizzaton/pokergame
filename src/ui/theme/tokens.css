@@ -1,62 +1,71 @@
-/* Design tokens (AGENTS.md §11.1). Components read these; they never hardcode colors. */
+/*
+ * Design tokens (AGENTS.md §30). Components read these semantic tokens and never hardcode colors.
+ * The light theme is the default; the dark theme applies when the "Tema" setting is "Escuro"
+ * (data-theme="dark"), or when it is "Automático" and the device prefers dark.
+ * The dark values appear twice (explicit choice and media query); keep both blocks in sync.
+ */
 :root {
-  /* Room and table */
-  --color-room: #06100e;
-  --color-room-light: #10231f;
-  --color-felt-deep: #04352c;
-  --color-felt: #0a5646;
-  --color-felt-light: #147d66;
-  --color-felt-line: rgb(243 217 139 / 22%);
-  --color-rail-dark: #22120a;
-  --color-rail: #4e2b15;
-  --color-rail-light: #7d4a26;
-  --texture-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color-scheme: light;
 
-  /* Accents and text */
-  --color-gold: #d9b865;
-  --color-gold-light: #f3d98b;
-  --color-gold-deep: #9c7a33;
-  --color-text: #f4f1e8;
-  --color-text-muted: rgb(244 241 232 / 74%);
-  --color-text-dim: rgb(244 241 232 / 58%);
-  --color-error: #ff9b8f;
-  --color-success: #8fe3b0;
-  --color-timer-warning: #ff6b57;
+  /* Surfaces and text */
+  --color-bg: #f4f6f5;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0f3f1;
+  --color-surface-sunken: #eaeeec;
+  --color-border: #dde3e0;
+  --color-border-strong: #c3ccc7;
+  --color-text: #15201b;
+  --color-text-muted: #55625b;
+  --color-text-dim: #66726b;
+  --color-overlay: rgb(15 23 19 / 42%);
 
-  /* Glass panels (HUD, menus, action bar) */
-  --color-glass: rgb(255 255 255 / 7%);
-  --color-glass-hover: rgb(255 255 255 / 12%);
-  --color-glass-strong: rgb(6 22 19 / 74%);
-  --color-glass-border: rgb(255 255 255 / 14%);
-  --color-panel: #0b2722;
-  --blur-glass: blur(14px) saturate(140%);
+  /* The accent (the only nod to the poker table) */
+  --color-accent: #0f7a5c;
+  --color-accent-hover: #0b6a4f;
+  --color-accent-text: #0b6b50;
+  --color-accent-soft: #e2f2eb;
+  --color-on-accent: #ffffff;
+
+  /* Status */
+  --color-error: #b42318;
+  --color-warning: #9a5b06;
+  --color-success: #067647;
+  --color-timer-warning: #d92d20;
+  --color-danger: #c4321f;
+  --color-on-danger: #ffffff;
+
+  /* Table */
+  --color-table: #e4eee8;
+  --color-table-border: #cbd9d1;
+  --color-table-line: #b6cabe;
 
   /* Cards */
-  --color-card-face: #fbf9f3;
-  --color-card-face-shade: #ece7da;
-  --color-card-edge: rgb(0 0 0 / 18%);
-  --color-card-back-a: #7c1d2c;
-  --color-card-back-b: #3d0b15;
-  --color-card-back-line: rgb(243 217 139 / 38%);
-  --color-suit-red: #c6182c;
-  --color-suit-black: #16181c;
-  --color-suit-clubs: #0f7a3a;
-  --color-suit-diamonds: #1b5ed0;
+  --color-card-face: #ffffff;
+  --color-card-edge: rgb(15 23 19 / 16%);
+  --color-card-back-a: #0f7a5c;
+  --color-card-back-b: #0b5e47;
+  --color-card-back-line: rgb(255 255 255 / 24%);
+  --color-suit-red: #cc2b2b;
+  --color-suit-black: #1a1f1d;
+  --color-suit-clubs: #12804a;
+  --color-suit-diamonds: #2563eb;
 
-  /* Chips, by denomination relative to the blinds (AGENTS.md §11.1) */
-  --chip-sb: #e8e4d8;
-  --chip-bb: #c62d2d;
-  --chip-5bb: #1f8a4c;
-  --chip-25bb: #1c1f26;
-  --chip-100bb: #6b3fa0;
-  --chip-500bb: #d99b2b;
-  --chip-edge: rgb(255 255 255 / 88%);
-  --color-chip-label: #f7e7b4;
+  /* Chips, by denomination relative to the blinds (AGENTS.md §11.1), muted to fit the palette */
+  --chip-sb: #e6e3dc;
+  --chip-bb: #cf4545;
+  --chip-5bb: #2f9b62;
+  --chip-25bb: #2c3133;
+  --chip-100bb: #7b5ec2;
+  --chip-500bb: #d29b32;
+  --chip-edge: rgb(255 255 255 / 85%);
 
-  /* Actions */
-  --color-action-fold: #8c2a2a;
-  --color-action-call: #1f6f5a;
-  --color-action-raise: #d9b865;
+  /* Procedural avatars: a soft tint of the player's hue with a dark initial (or the reverse). */
+  --avatar-bg: 55% 88%;
+  --avatar-fg: 50% 26%;
+
+  --shadow-soft: 0 1px 2px rgb(15 23 19 / 6%), 0 2px 8px rgb(15 23 19 / 6%);
+  --shadow-deep: 0 12px 32px rgb(15 23 19 / 14%);
+  --shadow-card: 0 1px 2px rgb(15 23 19 / 14%), 0 1px 4px rgb(15 23 19 / 8%);
 
   --font-ui:
     Manrope, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -68,24 +77,102 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-
-  --shadow-soft: 0 4px 14px rgb(0 0 0 / 35%);
-  --shadow-deep: 0 18px 50px rgb(0 0 0 / 60%);
-  --shadow-card: 0 1px 1px rgb(0 0 0 / 25%), 0 3px 8px rgb(0 0 0 / 35%);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
 
   /* Motion (scaled by --anim-scale: speed setting; 0 with reduced motion) */
   --anim-scale: 1;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --duration-deal: 300ms;
-  --duration-flip: 360ms;
-  --duration-chip: 420ms;
-  --duration-fade: 200ms;
+  --duration-deal: 260ms;
+  --duration-flip: 300ms;
+  --duration-chip: 360ms;
+  --duration-fade: 160ms;
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #0e1412;
+  --color-surface: #161d1a;
+  --color-surface-hover: #1e2622;
+  --color-surface-sunken: #111815;
+  --color-border: #28322d;
+  --color-border-strong: #3a4640;
+  --color-text: #e7ece9;
+  --color-text-muted: #a2aea7;
+  --color-text-dim: #8b9790;
+  --color-overlay: rgb(0 0 0 / 58%);
+  --color-accent: #34bf8e;
+  --color-accent-hover: #4ccd9e;
+  --color-accent-text: #5fd3a9;
+  --color-accent-soft: #15372b;
+  --color-on-accent: #062118;
+  --color-error: #f97066;
+  --color-warning: #f4b740;
+  --color-success: #47cd89;
+  --color-timer-warning: #f97066;
+  --color-danger: #c93a32;
+  --color-on-danger: #ffffff;
+  --color-table: #14211b;
+  --color-table-border: #22362c;
+  --color-table-line: #2e4639;
+  --color-card-face: #f6f6f3;
+  --color-card-edge: rgb(0 0 0 / 40%);
+  --color-card-back-a: #1d8f6c;
+  --color-card-back-b: #136650;
+  --color-card-back-line: rgb(255 255 255 / 20%);
+  --chip-edge: rgb(255 255 255 / 80%);
+  --avatar-bg: 30% 26%;
+  --avatar-fg: 70% 84%;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 30%), 0 2px 8px rgb(0 0 0 / 24%);
+  --shadow-deep: 0 12px 32px rgb(0 0 0 / 45%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 2px 6px rgb(0 0 0 / 30%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-bg: #0e1412;
+    --color-surface: #161d1a;
+    --color-surface-hover: #1e2622;
+    --color-surface-sunken: #111815;
+    --color-border: #28322d;
+    --color-border-strong: #3a4640;
+    --color-text: #e7ece9;
+    --color-text-muted: #a2aea7;
+    --color-text-dim: #8b9790;
+    --color-overlay: rgb(0 0 0 / 58%);
+    --color-accent: #34bf8e;
+    --color-accent-hover: #4ccd9e;
+    --color-accent-text: #5fd3a9;
+    --color-accent-soft: #15372b;
+    --color-on-accent: #062118;
+    --color-error: #f97066;
+    --color-warning: #f4b740;
+    --color-success: #47cd89;
+    --color-timer-warning: #f97066;
+    --color-danger: #c93a32;
+    --color-on-danger: #ffffff;
+    --color-table: #14211b;
+    --color-table-border: #22362c;
+    --color-table-line: #2e4639;
+    --color-card-face: #f6f6f3;
+    --color-card-edge: rgb(0 0 0 / 40%);
+    --color-card-back-a: #1d8f6c;
+    --color-card-back-b: #136650;
+    --color-card-back-line: rgb(255 255 255 / 20%);
+    --chip-edge: rgb(255 255 255 / 80%);
+    --avatar-bg: 30% 26%;
+    --avatar-fg: 70% 84%;
+    --avatar-bg: 30% 26%;
+    --avatar-fg: 70% 84%;
+    --shadow-soft: 0 1px 2px rgb(0 0 0 / 30%), 0 2px 8px rgb(0 0 0 / 24%);
+    --shadow-deep: 0 12px 32px rgb(0 0 0 / 45%);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 2px 6px rgb(0 0 0 / 30%);
+  }
 }
