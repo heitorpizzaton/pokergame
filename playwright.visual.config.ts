@@ -4,10 +4,11 @@ import { chromiumOnly } from './playwright.config.ts';
 const PORT = 4174;
 
 /**
- * Visual regression of the table at every size, portrait and landscape (AGENTS.md §13.3). It runs
- * against the seeded e2e build, so each screenshot shows the same deal. Baselines are generated
- * and compared only in CI, with the official Playwright Chromium, because pixels depend on the
- * browser build (ADR-023). Update them with the `update-visual-baselines` PR label.
+ * Visual regression of the table at every size, portrait and landscape, in the light and dark
+ * themes (AGENTS.md §13.3, §30.2). It runs against the seeded e2e build, so each screenshot shows
+ * the same deal. Baselines are generated and compared only in CI, with the official Playwright
+ * Chromium, because pixels depend on the browser build (ADR-023). Update them with the
+ * `update-visual-baselines` PR label.
  */
 export default defineConfig({
   testDir: 'tests/visual',
@@ -23,26 +24,32 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
   },
-  projects: [
-    {
-      name: 'portrait',
-      use: {
-        ...devices['Pixel 7'],
-        ...chromiumOnly,
-        viewport: { width: 390, height: 844 },
-        deviceScaleFactor: 1,
+  // Both themes (AGENTS.md §30.2): the light theme is the default color scheme.
+  projects: (['light', 'dark'] as const).flatMap((colorScheme) => {
+    const suffix = colorScheme === 'dark' ? '-dark' : '';
+    return [
+      {
+        name: `portrait${suffix}`,
+        use: {
+          ...devices['Pixel 7'],
+          ...chromiumOnly,
+          viewport: { width: 390, height: 844 },
+          deviceScaleFactor: 1,
+          colorScheme,
+        },
       },
-    },
-    {
-      name: 'landscape',
-      use: {
-        ...devices['Pixel 7 landscape'],
-        ...chromiumOnly,
-        viewport: { width: 844, height: 390 },
-        deviceScaleFactor: 1,
+      {
+        name: `landscape${suffix}`,
+        use: {
+          ...devices['Pixel 7 landscape'],
+          ...chromiumOnly,
+          viewport: { width: 844, height: 390 },
+          deviceScaleFactor: 1,
+          colorScheme,
+        },
       },
-    },
-  ],
+    ];
+  }),
   webServer: {
     command: `npx vite preview --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
