@@ -1,5 +1,10 @@
 import { useSyncExternalStore } from 'react';
-import type { ActionTimer, Settings, SettingsStore } from '../../app/settings.ts';
+import {
+  type ActionTimer,
+  type Settings,
+  type SettingsStore,
+  THEME_SETTINGS,
+} from '../../app/settings.ts';
 import { strings } from '../../i18n/index.ts';
 import styles from './Screens.module.css';
 
@@ -48,6 +53,28 @@ export function SettingsScreen({
     <main className={styles.screen} data-testid="settings-screen">
       <section className={styles.panel}>
         <h1 className={styles.title}>{t.title}</h1>
+
+        <fieldset className={styles.field}>
+          <legend>{t.sections.appearance}</legend>
+          <label className={styles.toggle}>
+            <span>{t.theme}</span>
+            <select
+              className={styles.select}
+              value={settings.theme}
+              data-testid="theme-setting"
+              onChange={(e) => {
+                const value = THEME_SETTINGS.find((v) => v === e.target.value);
+                if (value) store.update({ theme: value });
+              }}
+            >
+              {THEME_SETTINGS.map((v) => (
+                <option key={v} value={v}>
+                  {t.themeOptions[v]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </fieldset>
 
         <fieldset className={styles.field}>
           <legend>{t.sections.help}</legend>

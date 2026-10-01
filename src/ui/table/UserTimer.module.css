@@ -10,13 +10,13 @@
 
 .track {
   fill: none;
-  stroke: rgb(255 255 255 / 15%);
+  stroke: var(--color-border);
   stroke-width: 3;
 }
 
 .progress {
   fill: none;
-  stroke: var(--color-gold);
+  stroke: var(--color-accent);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-dashoffset: var(--to);
@@ -45,7 +45,7 @@
   bottom: -6px;
   height: 4px;
   border-radius: 2px;
-  background: rgb(255 255 255 / 15%);
+  background: var(--color-border);
   overflow: hidden;
 }
 

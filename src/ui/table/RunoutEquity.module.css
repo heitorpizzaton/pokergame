@@ -2,11 +2,10 @@
   width: min(100% - 24px, 520px);
   margin: 0 auto var(--space-1);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-glass-strong);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
 }
 
 .bar {
@@ -20,12 +19,12 @@
 .segment {
   flex-basis: 0;
   min-width: 3px;
-  background: hsl(var(--hue) 45% 55%);
+  background: hsl(var(--hue) 35% 60%);
   transition: flex-grow calc(600ms * var(--anim-scale)) var(--ease-out);
 }
 
 .user {
-  background: var(--color-gold);
+  background: var(--color-accent);
 }
 
 .legend {
@@ -41,6 +40,6 @@
 }
 
 .userText {
-  color: var(--color-gold-light);
+  color: var(--color-accent-text);
   font-weight: 700;
 }

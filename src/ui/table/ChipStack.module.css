@@ -12,18 +12,18 @@
   flex-shrink: 0;
 }
 
-/* A chip seen from above at an angle: coloured face, dashed white edge spots, darker rim. */
+/* A flat chip: coloured face, dashed white edge spots and a thin rim. */
 .chip {
   position: absolute;
   left: 0;
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--c) 0 42%, rgb(255 255 255 / 25%) 43% 47%, var(--c) 48%);
+  background: var(--c);
   border: 2.5px dashed var(--chip-edge);
   box-shadow:
-    0 0 0 1px var(--c),
-    0 2px 0 rgb(0 0 0 / 45%);
+    0 0 0 1px var(--color-border-strong),
+    0 1px 0 var(--color-card-edge);
 }
 
 .csb {
@@ -52,9 +52,10 @@
 
 .label {
   padding: 1px 7px;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: rgb(0 0 0 / 55%);
-  color: var(--color-chip-label);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 0.72rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;

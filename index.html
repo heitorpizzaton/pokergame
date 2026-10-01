@@ -3,8 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#062a24" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6f5" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1412" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Apply a pinned theme before the first paint (AGENTS.md §30.2); src/app/theme.ts keeps it
+      // in sync afterwards.
+      try {
+        var theme = JSON.parse(localStorage.getItem('mesa-viva:settings') || '{}').theme;
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch (e) {}
+    </script>
     <meta
       name="description"
       content="Texas Hold'em contra oponentes controlados pelo computador. Jogo de entretenimento: as fichas não têm valor real."

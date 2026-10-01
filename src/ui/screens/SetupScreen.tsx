@@ -65,7 +65,7 @@ export function SetupScreen({ initial, onStart, onBack }: Props) {
             <span className={styles.hint}>{t.playersHint(setup.players)}</span>
           </div>
           <div className={styles.preview} aria-hidden="true">
-            <div className={styles.previewFelt} />
+            <div className={styles.previewTable} />
             {seatPositions(setup.players, 'landscape').map((p, i) => (
               <span
                 key={i}

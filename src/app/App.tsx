@@ -26,6 +26,7 @@ import { pickNames } from './names.ts';
 import { LocalNpcDriver, type NpcDriver, type NpcSeat } from './npc-driver.ts';
 import type { RngFactory } from './rng-factory.ts';
 import { type Settings, SettingsStore } from './settings.ts';
+import { applyTheme } from './theme.ts';
 import { type GameSetup, loadLastSetup, saveLastSetup, toEngineConfig } from './setup.ts';
 
 // AGENTS.md §12: history and the replayer are not part of the initial bundle.
@@ -141,6 +142,9 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
   const sessionId = useMemo(() => new Date().toISOString(), []);
   const [screen, setScreen] = useState<Screen>({ name: 'menu' });
   const [autosave, setAutosave] = useState(() => loadAutosave(storage()));
+  useEffect(() => {
+    applyTheme(settings.theme);
+  }, [settings.theme]);
 
   const buildController = (setup: GameSetup, restore?: SavedGame): GameController => {
     const deckRng = rngs.deck();

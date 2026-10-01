@@ -1,6 +1,9 @@
 /** User settings (AGENTS.md §11.7), persisted in localStorage. */
 export type ActionTimer = 'off' | 15 | 20 | 30;
 export type NpcSpeedSetting = 'normal' | 'fast';
+/** Color theme (AGENTS.md §30.2): follow the device, or force light or dark. */
+export type ThemeSetting = 'auto' | 'light' | 'dark';
+export const THEME_SETTINGS: readonly ThemeSetting[] = ['auto', 'light', 'dark'];
 
 export interface Settings {
   /** Odds panel on/off (AGENTS.md §19). Off: no probability is computed for display. */
@@ -21,6 +24,7 @@ export interface Settings {
   readonly volume: number;
   readonly haptics: boolean;
   readonly reducedMotion: boolean;
+  readonly theme: ThemeSetting;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -39,6 +43,7 @@ export const DEFAULT_SETTINGS: Settings = {
   volume: 70,
   haptics: true,
   reducedMotion: false,
+  theme: 'auto',
 };
 
 const STORAGE_KEY = 'mesa-viva:settings';
@@ -72,6 +77,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): Settings
         : DEFAULT_SETTINGS.volume,
       haptics: bool('haptics'),
       reducedMotion: bool('reducedMotion'),
+      theme: THEME_SETTINGS.find((t) => t === parsed.theme) ?? DEFAULT_SETTINGS.theme,
     };
   } catch {
     return DEFAULT_SETTINGS;

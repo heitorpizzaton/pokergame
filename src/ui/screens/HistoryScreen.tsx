@@ -238,7 +238,7 @@ function Replayer({
         </button>
       </header>
       <section className={tableStyles.tableArea}>
-        <div className={tableStyles.felt} />
+        <div className={tableStyles.tableSurface} />
         {frame.seats.map((s) => {
           const recordSeat = record.seats.find((x) => x.seat === s.seat);
           const pos = positions[visualSlot(s.seat, record.userSeat, n)] ?? { x: 50, y: 50 };

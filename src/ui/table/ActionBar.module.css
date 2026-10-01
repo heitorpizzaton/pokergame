@@ -4,10 +4,8 @@
   gap: var(--space-2);
   padding: var(--space-2) calc(var(--space-3) + var(--safe-right))
     calc(var(--space-2) + var(--safe-bottom)) calc(var(--space-3) + var(--safe-left));
-  background: var(--color-glass-strong);
-  border-top: 1px solid var(--color-glass-border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
 }
 
 .sizing {
@@ -27,16 +25,18 @@
   min-width: 44px;
   min-height: 34px;
   padding: 0 var(--space-2);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-glass);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 0.85rem;
 }
 
 .presetActive {
-  border-color: var(--color-gold);
-  color: var(--color-gold-light);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-weight: 700;
 }
 
 .slider {
@@ -48,16 +48,16 @@
 .slider input[type='range'] {
   flex: 1;
   min-width: 0;
-  accent-color: var(--color-gold);
+  accent-color: var(--color-accent);
 }
 
 .step {
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: 50%;
-  background: var(--color-glass);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 1.3rem;
 }
@@ -66,9 +66,9 @@
   width: 84px;
   height: 44px;
   padding: 0 var(--space-2);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: rgb(0 0 0 / 30%);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
@@ -90,25 +90,38 @@
   flex: 1;
   min-height: 48px;
   padding: 0 var(--space-2);
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
-  color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  transition: background calc(var(--duration-fade) * var(--anim-scale));
 }
 
+/* Fold is neutral, call is soft, bet/raise is the primary action (AGENTS.md §30.1). */
 .fold {
-  background: var(--color-action-fold);
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.fold:hover {
+  background: var(--color-surface-hover);
 }
 
 .call {
-  background: var(--color-action-call);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
 }
 
 .raise {
-  background: var(--color-action-raise);
-  color: #1b1405;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.raise:hover {
+  background: var(--color-accent-hover);
 }
 
 .pre {
@@ -119,16 +132,17 @@
   gap: var(--space-1);
   min-height: 44px;
   padding: 0 var(--space-2);
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: 0.8rem;
   text-align: center;
 }
 
 .pre input {
-  accent-color: var(--color-gold);
+  accent-color: var(--color-accent);
 }
 
 .preActive {
-  border-color: var(--color-gold);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
