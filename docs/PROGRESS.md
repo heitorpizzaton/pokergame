@@ -127,6 +127,13 @@ Phase V1 is done. Phases V2–V7 were withdrawn by the owner (AGENTS.md §17.4).
 
 The realistic 3D table was discarded after the owner tested the Phase V2 preview (AGENTS.md §17.4, ADR-030). None of the Phase V2–V7 tasks will be done. The spike's code is recoverable at commit `3c5ac08`.
 
-## Next — new visual direction (to be specified)
+## Phase W1 — Clean web-app redesign (AGENTS.md §30)
 
-- [ ] Owner chooses a direction that feels more like a modern website than a game; the agent writes it into `AGENTS.md` as a new section with phases and acceptance criteria
+- [x] Direction chosen by the owner (clean web app, light and dark) and written into `AGENTS.md` §30 (ADR-031)
+- [x] Semantic design tokens with light and dark themes; the dark blocks are kept in sync by a test (30.2)
+- [x] "Tema" setting (Automático / Claro / Escuro), persisted, applied before the first paint (30.2)
+- [x] Every screen restyled flat: menu, setup, table, action bar, odds panel, summary, history and replayer, settings, guide, fairness panel; new app icon (30.1)
+- [x] No casino styling left, and no hardcoded colors in component styles (`tests/unit/theme.test.ts`)
+- [x] axe checks pass in both themes on every screen (`tests/e2e/a11y.spec.ts`)
+- [~] Visual regression baselines for portrait/landscape × light/dark regenerated in CI
+- [ ] **Accept:** the owner approves the deployed preview on their phone
