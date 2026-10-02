@@ -4,6 +4,40 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-033 — Learning aids from public information only (Phase X2)
+
+- **Date:** 2026-10-02
+- **Context:** AGENTS.md §31.2 asks for four aids:
+  - the user's made hand always visible;
+  - an opponent profile;
+  - a hand log;
+  - first-game tips.
+
+  None of them may reveal hidden cards.
+
+- **Decision:**
+  - **Made hand.** `app/made-hand.ts` names the user's hand from their own hole cards and the board shown so far. Preflop, it names the starting hand ("Ás e Rei do mesmo naipe", "Par de Damas"); after the flop, it uses the evaluator's hand name. It is a pill under the user's seat, independent of the odds panel.
+  - **Opponent profile.** `app/opponent-stats.ts` (`OpponentStatsTracker`) observes the user's own `PlayerView` at the end of each hand, after any reveal. It counts:
+    - hands, VPIP and PFR;
+    - aggressive and passive postflop actions;
+    - showdowns reached;
+    - the last five hands shown.
+
+    It reads only what the view already exposes, so it cannot see hidden cards by construction. The tracker state is saved with the game (`SavedGame.opponents`, optional for older saves). Tapping an NPC seat opens the sheet. Percentages show "—" until there is data.
+
+  - **Hand log.** A sheet built from the view's public action list (`view.actions`), grouped by street, opened from a list icon in the header.
+  - **Tips.** `Settings.tipsSeen`:
+    - It defaults to false in real builds and to true in the e2e build, so the existing flows are unchanged.
+    - The first table waits (`controller.start()` is not called) until the three tips are dismissed or skipped.
+    - "Restaurar padrões" keeps it, and "Como jogar" can set it back to false.
+- **Alternatives considered:**
+  - **Reusing the AI's opponent model:** rejected. It lives in the NPC brains, which can run in a worker, and it tracks things the user does not need.
+  - **Showing tips as an overlay while the game runs:** rejected. The first hand would start under the tips.
+- **Consequences:**
+  - Two new sheets share `Sheet.module.css`.
+  - The header gains a list button.
+  - The visual baselines change.
+
 ## ADR-032 — Game feel: one pacing table, street and showdown phases, hidden equity (Phase X1)
 
 - **Date:** 2026-10-02
