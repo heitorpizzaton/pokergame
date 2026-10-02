@@ -1,0 +1,476 @@
+/* Setup screen (AGENTS.md §5.1): a header, cards per topic and a sticky summary with Começar. */
+
+.page {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 90% 40% at 50% 0%, var(--color-room-glow), transparent 70%),
+    var(--color-bg);
+  color: var(--color-text);
+}
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: calc(var(--space-2) + var(--safe-top)) calc(var(--space-3) + var(--safe-right))
+    var(--space-2) calc(var(--space-3) + var(--safe-left));
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.back:hover {
+  background: var(--color-surface-hover);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-4) calc(var(--space-4) + var(--safe-right)) calc(140px + var(--safe-bottom))
+    calc(var(--space-4) + var(--safe-left));
+}
+
+/* ---- Sections ---------------------------------------------------------------------------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.sectionTitle {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.sectionTitle + * {
+  clear: both;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.groupLabel,
+.inputLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.divider {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--color-border);
+}
+
+.hint,
+.error,
+.warning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-error);
+}
+
+.warning {
+  color: var(--color-warning);
+}
+
+/* ---- Table preview and players --------------------------------------------------------- */
+
+.preview {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1.75;
+  margin: 0 auto;
+}
+
+.previewTable {
+  position: absolute;
+  inset: 16% 12%;
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    var(--color-felt-light),
+    var(--color-felt) 55%,
+    var(--color-felt-dark)
+  );
+  box-shadow:
+    0 0 0 1.5px var(--color-trim),
+    0 0 0 6px var(--color-rail),
+    var(--shadow-soft);
+}
+
+.previewDealer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-trim);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-rail);
+}
+
+.previewSeat {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-border-strong);
+  box-shadow: var(--shadow-soft);
+  transition:
+    left calc(240ms * var(--anim-scale)) var(--ease-out),
+    top calc(240ms * var(--anim-scale)) var(--ease-out);
+}
+
+.previewUser {
+  width: 22px;
+  height: 22px;
+  background: var(--color-accent);
+}
+
+.stepperRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.stepper {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.stepper:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.stepper:disabled {
+  opacity: 0.4;
+}
+
+.countBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 84px;
+}
+
+.count {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.countLabel {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.stepperRow + .hint {
+  text-align: center;
+}
+
+/* ---- Option buttons (pressed state) and segmented radios ------------------------------- */
+
+.grid4,
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.grid3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 44px;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background calc(var(--duration-fade) * var(--anim-scale)),
+    border-color calc(var(--duration-fade) * var(--anim-scale));
+}
+
+.optionTall {
+  min-height: 56px;
+}
+
+.option small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.option:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.option[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-weight: 800;
+}
+
+.option[aria-pressed='true'] small {
+  color: var(--color-accent-text);
+}
+
+.option:disabled {
+  opacity: 0.45;
+}
+
+.segmented {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+}
+
+.segment {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  cursor: pointer;
+  transition: background calc(var(--duration-fade) * var(--anim-scale));
+}
+
+/* The radio covers the whole segment, invisible, so taps and tests reach the real input. */
+.segment input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segment:has(input:checked) {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 800;
+  box-shadow: var(--shadow-soft);
+}
+
+.segment:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ---- Inputs ------------------------------------------------------------------------------ */
+
+.inputGroup {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
+  align-items: center;
+}
+
+.inputGroup .inputLabel {
+  grid-column: 1 / -1;
+}
+
+.inputGroup:not(:has(.unit)) .input {
+  grid-column: 1 / -1;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  outline: 2px solid var(--color-accent-soft);
+}
+
+.inputActive .input {
+  border-color: var(--color-accent);
+}
+
+.unit {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.blindInputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.styleList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.styleRow {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.select {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+/* ---- Sticky footer ---------------------------------------------------------------------- */
+
+.footer {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  padding: var(--space-3) calc(var(--space-4) + var(--safe-right))
+    calc(var(--space-3) + var(--safe-bottom)) calc(var(--space-4) + var(--safe-left));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-deep);
+}
+
+.footerInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.summary {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.start {
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: 1.05rem;
+  font-weight: 800;
+  transition: background calc(var(--duration-fade) * var(--anim-scale));
+}
+
+.start:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.start:disabled {
+  opacity: 0.45;
+}

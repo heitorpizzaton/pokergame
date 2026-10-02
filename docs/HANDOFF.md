@@ -4,6 +4,48 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-10-02 (session 1, part 20) — Claude — Phase Y1: casino look, dealer, personalisation
+
+**Owner action needed:** after this merges, open the game on your phone and check:
+
+- the new look (green felt, leather rail, gold);
+- the dealer at the top of the table;
+- Nova partida (the redesigned screen with blind presets);
+- Configurações → Aparência (table color, card backs, accent color).
+
+Then tell me what to adjust.
+
+**Branch:** `feat/setup-redesign`. X1–X3 are merged (PRs #20, #21, #22).
+
+### Done
+
+AGENTS.md §32 and ADR-035:
+
+- casino tokens in light and dark;
+- the felt and rail table;
+- the dealer with chip tray and deck; seats spread around them;
+- personalisation settings;
+- the Setup redesign;
+- new icons.
+
+### Exact next step
+
+- Open the PR with the `update-visual-baselines` label. After the bot's baseline commit, push a real commit so CI runs, then merge when green.
+- Then wait for owner feedback.
+
+### Verification
+
+- `npm run check`.
+- `tests/unit/table-layout.test.ts`.
+- `tests/unit/theme.test.ts`.
+- `tests/e2e/appearance.spec.ts`.
+
+### Known issues
+
+- **Landscape phones with 9 players** (for example 844×390) are crowded. The dealer button can sit on the user's second card, and the right-hand seats overlap. The same overlaps exist in the baselines from before this phase, so this is not a regression. A follow-up could shrink seats on short landscape screens.
+
+---
+
 ## 2026-10-02 (session 1, part 19) — Claude — Phase X3: game modes
 
 **Owner action needed:** after X2 and X3 merge, try on your phone:

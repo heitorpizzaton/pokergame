@@ -3,6 +3,10 @@
   grid-template-rows: auto 1fr auto;
   height: 100dvh;
   overflow: hidden;
+  /* Warm light over the table, like a lamp in a card room (AGENTS.md §32.1). */
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 30%, var(--color-room-glow), transparent 70%),
+    var(--color-bg);
 }
 
 /* ---- Header ---------------------------------------------------------------------------- */
@@ -97,13 +101,26 @@
   container-type: size;
 }
 
-/* The table: a flat, lightly tinted surface with a thin border (AGENTS.md §30.1). */
+/*
+ * The table (AGENTS.md §32.1): felt lit from above, a brass trim and a padded black leather rail
+ * drawn as rings of box-shadow, so they follow the oval.
+ */
 .tableSurface {
   position: absolute;
   inset: 11% 13% 13%;
-  border: 1px solid var(--color-table-border);
   border-radius: 46% / 36%;
-  background: var(--color-table);
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    var(--color-felt-light) 0%,
+    var(--color-felt) 55%,
+    var(--color-felt-dark) 100%
+  );
+  box-shadow:
+    var(--shadow-felt),
+    0 0 0 2px var(--color-trim),
+    0 0 0 13px var(--color-rail),
+    0 0 0 15px var(--color-rail-light),
+    var(--shadow-table);
 }
 
 .landscape .tableSurface {
@@ -111,11 +128,11 @@
   border-radius: 38% / 46%;
 }
 
-/* The betting line: a faint ellipse inside the table edge. */
+/* The betting line printed on the felt. */
 .bettingLine {
   position: absolute;
   inset: 11%;
-  border: 1px dashed var(--color-table-line);
+  border: 1px solid var(--color-felt-line);
   border-radius: inherit;
 }
 
@@ -327,7 +344,7 @@
 
 .rabbitLabel {
   font-size: 0.7rem;
-  color: var(--color-text-muted);
+  color: var(--color-on-felt-muted);
 }
 
 .commitment {
@@ -514,4 +531,97 @@
     left calc(700ms * var(--anim-scale)) var(--ease-out),
     top calc(700ms * var(--anim-scale)) var(--ease-out);
   pointer-events: none;
+}
+
+/* ---- Dealer (AGENTS.md §32.2) ------------------------------------------------------------- */
+
+/* The dealer sits at the top of the table behind a chip tray, with the deck beside it. */
+.dealer {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.dealerPlate {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 3px;
+  border: 1px solid var(--color-trim);
+  border-radius: 999px;
+  background: var(--color-rail);
+  box-shadow: var(--shadow-soft);
+}
+
+.dealerAvatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-on-felt);
+  color: var(--color-rail);
+}
+
+.dealerName {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-on-felt);
+}
+
+/* Narrow tables: the dealer is just the icon, so the top seats keep their room. */
+@container (max-width: 420px) {
+  .dealerPlate {
+    padding: 3px;
+  }
+
+  .dealerName {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+/* The chip tray: rows of chips in a brass-rimmed rack. */
+.tray {
+  width: 64px;
+  height: 12px;
+  border: 1.5px solid var(--color-trim);
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--chip-sb) 0 16%,
+    var(--chip-bb) 16% 33%,
+    var(--chip-5bb) 33% 50%,
+    var(--chip-25bb) 50% 67%,
+    var(--chip-100bb) 67% 84%,
+    var(--chip-500bb) 84% 100%
+  );
+  box-shadow: var(--shadow-card);
+}
+
+/* The deck in front of the dealer: a short stack of card backs. */
+.deck {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 28px;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(45deg, var(--color-card-back-line) 0 1px, transparent 1px 5px),
+    linear-gradient(var(--color-card-back-a), var(--color-card-back-b));
+  box-shadow:
+    inset 0 0 0 1.5px var(--color-card-face),
+    1px 1px 0 var(--color-card-face),
+    2px 2px 0 var(--color-card-edge),
+    3px 3px 0 var(--color-card-face),
+    4px 4px 0 var(--color-card-edge);
 }

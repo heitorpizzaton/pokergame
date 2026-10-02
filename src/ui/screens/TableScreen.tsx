@@ -24,6 +24,7 @@ import {
   betPosition,
   potPosition,
   type SeatPosition,
+  dealerPosition,
   seatPositions,
   tableCenter,
   visualSlot,
@@ -91,7 +92,12 @@ export function TableScreen({
     positions[visualSlot(seat, userSeat, count)] ?? { x: 50, y: 50 };
   const center = tableCenter(orientation);
   const pot = potPosition(center);
-  const dealer = posOf(view.button);
+  // The dealer sits at the top centre, facing the user; cards come from the deck in front of them.
+  const dealerAt = dealerPosition(orientation);
+  const dealer = {
+    x: dealerAt.x + (orientation === 'portrait' ? 7 : 8),
+    y: dealerAt.y + (center.y - dealerAt.y) * (orientation === 'portrait' ? 0.32 : 0.22),
+  };
   const showResult = snap.phase === 'handResult' || (snap.phase === 'watching' && snap.result);
   const winners = new Set(showResult ? (snap.result?.winners.map((w) => w.seat) ?? []) : []);
   const best = new Set<Card>(showResult ? (snap.result?.bestFive ?? []) : []);
@@ -301,6 +307,28 @@ export function TableScreen({
             />
           );
         })}
+
+        {/* The dealer and their deck (AGENTS.md §32.2): every card is dealt from here. */}
+        <div
+          className={styles.dealer}
+          style={{ left: `${dealerAt.x}%`, top: `${dealerAt.y}%` }}
+          data-testid="dealer"
+        >
+          <span className={styles.dealerPlate}>
+            <span className={styles.dealerAvatar} aria-hidden="true">
+              <Icon name="dealer" size={18} />
+            </span>
+            <span className={styles.dealerName}>{strings.table.dealerName}</span>
+          </span>
+          <span className={styles.tray} aria-hidden="true" />
+        </div>
+        <span
+          className={styles.deck}
+          style={{ left: `${dealer.x}%`, top: `${dealer.y}%` }}
+          role="img"
+          aria-label={strings.table.deck}
+          data-testid="deck"
+        />
 
         {/* The dealer button slides to its new seat between hands (AGENTS.md §31.1.8). */}
         {buttonSeat && buttonSeat.status !== 'eliminated' && (

@@ -854,3 +854,62 @@ The 3D table (§17.4), online rankings or anything that needs a server, and anyt
 - **§5.1** (blinds fixed for the whole game): blinds may rise in tournament mode (31.3.1); fixed remains the default.
 - **§19** (minimized pill shows the equity): the minimized pill hides the number until tapped (31.1.2).
 - **§11.4 / §8.4** (animation timing): dealing and street pacing per 31.1.3. The NPC thinking delay budget of §8.4 is unchanged.
+
+---
+
+## 32. Casino look, the dealer and personalisation (owner decision, 2026-10-02)
+
+The owner found the clean web-app look (§30) too plain. They asked for:
+
+- a better Setup screen;
+- a dealer at the table, from whom the cards come;
+- color choices;
+- a look based on their reference photo of a casino poker room.
+
+The photo shows a green felt table with a black leather rail and brass trim, a dealer in a vest at the top centre behind a chip tray, and players around the rail, in warm, dark surroundings with gold light. Where this section differs from §30.1, **this section wins**. §30.2 (light and dark themes, semantic tokens, WCAG AA), §30.3 (no engine or behavior change) and every Part I principle still apply.
+
+### 32.1 Look
+- **Table:**
+  - green felt, lit from above (a soft radial gradient);
+  - a thin brass trim;
+  - a padded black leather rail;
+  - a deep shadow under the table;
+  - the betting line printed on the felt.
+- **Surroundings:**
+  - **Dark theme:** warm near-black.
+  - **Light theme:** ivory.
+  - Both have a faint warm glow from above.
+- **Accent:** gold by default, for primary actions, focus, the active player and winning highlights.
+- **Cards:** clean white faces. The backs are deep red by default.
+- **Chips:** the denomination colors of §11.1.
+- Still no backdrop blur (cost on phones, §12). Colors still come only from tokens.
+
+### 32.2 The dealer
+- A non-playing dealer sits at the **top centre** of the oval, facing the user (who stays at the bottom centre), with a chip tray and the deck in front.
+- Seats are spread around the rest of the oval and never take the dealer's place.
+- **Every card is dealt from the deck in front of the dealer:** hole cards in the order of §5.3, and the burn cards.
+- The dealer is purely visual. The dealer button still marks the button seat (§5.2).
+
+### 32.3 Personalisation (Configurações → Aparência)
+- **Cor da mesa:** Verde (default), Azul, Vinho, Roxo, Grafite.
+- **Verso das cartas:** Vermelho (default), Azul, Verde, Preto.
+- **Cor de destaque** (menus, buttons, highlights): Dourado (default), Esmeralda, Safira, Rubi. Every accent has light and dark values that meet WCAG AA.
+- The choices are persisted with the other settings and applied before the first paint.
+
+### 32.4 Setup screen
+The Setup screen is a set of cards with clear headings:
+
+- **Mesa:** a table preview and the player stepper.
+- **Fichas iniciais:** presets and another value.
+- **Blinds:**
+  - presets by stack depth: Profundo 200 BB, Padrão 100 BB, Curto 50 BB, Turbo 25 BB;
+  - the two blind fields;
+  - the structure (fixed or tournament).
+- **Oponentes:** random mix and level, or a style per seat.
+
+A sticky footer summarises the game and holds "Começar".
+
+### 32.5 Phase Y1
+Everything in 32.1–32.4, with tests and regenerated visual baselines.
+
+*Accept:* `npm run check` green; axe checks pass in both themes; **the owner approves on their phone**.

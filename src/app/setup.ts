@@ -35,6 +35,23 @@ export function opponentStyles(setup: GameSetup): readonly StyleId[] | 'random' 
 
 export const BUY_IN_PRESETS = [1_000, 5_000, 10_000, 50_000] as const;
 export const MIN_PLAYERS = 2;
+
+/** Blind presets by stack depth, in big blinds (the Setup screen's quick choices). */
+export const BLIND_DEPTHS = { deep: 200, standard: 100, short: 50, turbo: 25 } as const;
+export type BlindDepth = keyof typeof BLIND_DEPTHS;
+
+/**
+ * Blinds that give each player about `bigBlinds` big blinds: an even big blind of at least 2,
+ * with the small blind at half of it. Null when the stack is too small for any preset.
+ */
+export function blindsForDepth(
+  startingStack: number,
+  bigBlinds: number,
+): { readonly smallBlind: number; readonly bigBlind: number } | null {
+  if (!Number.isSafeInteger(startingStack) || startingStack < 20) return null;
+  const bigBlind = Math.max(2, 2 * Math.round(startingStack / bigBlinds / 2));
+  return { smallBlind: bigBlind / 2, bigBlind };
+}
 export const MAX_PLAYERS = 9;
 
 export type SetupError = 'integer' | 'smallBlindMin' | 'bigBlindAboveSmall' | 'stackTooShort';

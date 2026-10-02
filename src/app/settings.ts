@@ -4,6 +4,13 @@ export type NpcSpeedSetting = 'normal' | 'fast';
 /** Color theme (AGENTS.md §30.2): follow the device, or force light or dark. */
 export type ThemeSetting = 'auto' | 'light' | 'dark';
 export const THEME_SETTINGS: readonly ThemeSetting[] = ['auto', 'light', 'dark'];
+/** Personalisation (AGENTS.md §32.3): felt, card backs and the accent of menus and buttons. */
+export type FeltColor = 'green' | 'blue' | 'red' | 'purple' | 'graphite';
+export const FELT_COLORS: readonly FeltColor[] = ['green', 'blue', 'red', 'purple', 'graphite'];
+export type CardBackColor = 'red' | 'blue' | 'green' | 'black';
+export const CARD_BACK_COLORS: readonly CardBackColor[] = ['red', 'blue', 'green', 'black'];
+export type AccentColor = 'gold' | 'emerald' | 'sapphire' | 'ruby';
+export const ACCENT_COLORS: readonly AccentColor[] = ['gold', 'emerald', 'sapphire', 'ruby'];
 
 export interface Settings {
   /** Odds panel on/off (AGENTS.md §19). Off: no probability is computed for display. */
@@ -25,6 +32,9 @@ export interface Settings {
   readonly haptics: boolean;
   readonly reducedMotion: boolean;
   readonly theme: ThemeSetting;
+  readonly felt: FeltColor;
+  readonly cardBack: CardBackColor;
+  readonly accent: AccentColor;
   /** The first-game tips were seen and dismissed (AGENTS.md §31.2.4). */
   readonly tipsSeen: boolean;
 }
@@ -46,6 +56,9 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   reducedMotion: false,
   theme: 'auto',
+  felt: 'green',
+  cardBack: 'red',
+  accent: 'gold',
   // The seeded end-to-end build starts at the table directly; its tips test opts in.
   tipsSeen: import.meta.env.MODE === 'e2e',
 };
@@ -82,6 +95,9 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): Settings
       haptics: bool('haptics'),
       reducedMotion: bool('reducedMotion'),
       theme: THEME_SETTINGS.find((t) => t === parsed.theme) ?? DEFAULT_SETTINGS.theme,
+      felt: FELT_COLORS.find((c) => c === parsed.felt) ?? DEFAULT_SETTINGS.felt,
+      cardBack: CARD_BACK_COLORS.find((c) => c === parsed.cardBack) ?? DEFAULT_SETTINGS.cardBack,
+      accent: ACCENT_COLORS.find((c) => c === parsed.accent) ?? DEFAULT_SETTINGS.accent,
       tipsSeen: bool('tipsSeen'),
     };
   } catch {

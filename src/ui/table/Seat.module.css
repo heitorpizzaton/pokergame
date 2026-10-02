@@ -127,10 +127,13 @@
 }
 
 .position {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-rail);
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--color-text-muted);
+  color: var(--color-on-felt);
 }
 
 .acting .plate {

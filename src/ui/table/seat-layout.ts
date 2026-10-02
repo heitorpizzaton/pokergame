@@ -8,17 +8,48 @@ export interface SeatPosition {
   readonly y: number;
 }
 
+/** Half-width (radians) of the gap kept free for the dealer at the top centre. */
+const DEALER_GAP: Readonly<Record<'portrait' | 'landscape', number>> = {
+  portrait: 0.32,
+  landscape: 0.3,
+};
+
+function ellipse(orientation: 'portrait' | 'landscape') {
+  return {
+    rx: orientation === 'portrait' ? 40 : 44,
+    ry: orientation === 'portrait' ? 41 : 38,
+    cy: orientation === 'portrait' ? 47 : 46,
+  };
+}
+
+/**
+ * Seats around the oval, leaving the top centre to the dealer, who faces the user. The user sits
+ * at the bottom centre and the others follow clockwise (bottom → left → top → right), evenly
+ * spaced. With an even number of players one spot is left empty beside the dealer, on the right.
+ */
 export function seatPositions(
   count: number,
   orientation: 'portrait' | 'landscape',
 ): SeatPosition[] {
-  const rx = orientation === 'portrait' ? 40 : 44;
-  const ry = orientation === 'portrait' ? 41 : 38;
-  const cy = orientation === 'portrait' ? 47 : 46;
+  const { rx, ry, cy } = ellipse(orientation);
+  const gap = DEALER_GAP[orientation];
+  // Arc coordinate: clockwise from the right edge of the dealer's gap to its left edge.
+  const arc = 2 * Math.PI - 2 * gap;
+  // Heads-up: the opponent sits across the table, just left of the dealer.
+  const spots = count === 2 ? 5 : count % 2 === 1 ? count : count + 1;
+  const half = Math.floor(count / 2);
   return Array.from({ length: count }, (_, i) => {
-    const angle = Math.PI / 2 + (i * 2 * Math.PI) / count;
+    const spot = count === 2 ? i * 2 : i <= half ? i : i + spots - count;
+    const s = (arc / 2 + (spot * arc) / spots) % arc;
+    const angle = (3 * Math.PI) / 2 + gap + s;
     return { x: 50 + rx * Math.cos(angle), y: cy + ry * Math.sin(angle) };
   });
+}
+
+/** The dealer's place: at the top of the oval, just inside the rail, facing the user. */
+export function dealerPosition(orientation: 'portrait' | 'landscape'): SeatPosition {
+  const { ry, cy } = ellipse(orientation);
+  return { x: 50, y: cy - ry * 0.8 };
 }
 
 /** Visual slot of a logical seat so that the user's seat lands in slot 0. */

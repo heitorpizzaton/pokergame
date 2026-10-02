@@ -1,6 +1,9 @@
-import { useSyncExternalStore } from 'react';
+import { type CSSProperties, useSyncExternalStore } from 'react';
 import {
+  ACCENT_COLORS,
   type ActionTimer,
+  CARD_BACK_COLORS,
+  FELT_COLORS,
   type Settings,
   type SettingsStore,
   THEME_SETTINGS,
@@ -39,6 +42,52 @@ function Toggle({
   );
 }
 
+/** A row of color swatches backed by radio inputs (AGENTS.md §32.3). */
+function Swatches<T extends string>({
+  label,
+  name,
+  options,
+  value,
+  names,
+  onChange,
+}: {
+  readonly label: string;
+  readonly name: 'felt' | 'cardback' | 'accent';
+  readonly options: readonly T[];
+  readonly value: T;
+  readonly names: Readonly<Record<T, string>>;
+  readonly onChange: (value: T) => void;
+}) {
+  return (
+    <div className={styles.swatchField} role="radiogroup" aria-label={label}>
+      <span className={styles.swatchLabel}>
+        {label}
+        <span className={styles.swatchValue}>{names[value]}</span>
+      </span>
+      <div className={styles.swatches}>
+        {options.map((option) => (
+          <label
+            key={option}
+            className={styles.swatch}
+            style={{ '--swatch': `var(--swatch-${name}-${option})` } as CSSProperties}
+            title={names[option]}
+          >
+            <input
+              type="radio"
+              name={name}
+              aria-label={names[option]}
+              checked={value === option}
+              onChange={() => {
+                onChange(option);
+              }}
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Settings screen (AGENTS.md §11.7). */
 export function SettingsScreen({
   store,
@@ -74,6 +123,36 @@ export function SettingsScreen({
               ))}
             </select>
           </label>
+          <Swatches
+            label={t.felt}
+            name="felt"
+            options={FELT_COLORS}
+            value={settings.felt}
+            names={t.feltOptions}
+            onChange={(felt) => {
+              store.update({ felt });
+            }}
+          />
+          <Swatches
+            label={t.cardBack}
+            name="cardback"
+            options={CARD_BACK_COLORS}
+            value={settings.cardBack}
+            names={t.cardBackOptions}
+            onChange={(cardBack) => {
+              store.update({ cardBack });
+            }}
+          />
+          <Swatches
+            label={t.accent}
+            name="accent"
+            options={ACCENT_COLORS}
+            value={settings.accent}
+            names={t.accentOptions}
+            onChange={(accent) => {
+              store.update({ accent });
+            }}
+          />
         </fieldset>
 
         <fieldset className={styles.field}>

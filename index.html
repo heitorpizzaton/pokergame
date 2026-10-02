@@ -3,15 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6f5" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1412" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f0e6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0c0a08" />
     <meta name="color-scheme" content="light dark" />
     <script>
-      // Apply a pinned theme before the first paint (AGENTS.md §30.2); src/app/theme.ts keeps it
+      // Apply a pinned theme before the first paint (AGENTS.md §30.2, §32.3); src/app/theme.ts keeps it
       // in sync afterwards.
       try {
-        var theme = JSON.parse(localStorage.getItem('mesa-viva:settings') || '{}').theme;
-        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+        var saved = JSON.parse(localStorage.getItem('mesa-viva:settings') || '{}');
+        var data = document.documentElement.dataset;
+        if (saved.theme === 'light' || saved.theme === 'dark') data.theme = saved.theme;
+        // Personalisation (AGENTS.md §32.3); invalid values are ignored by the CSS.
+        if (typeof saved.felt === 'string' && saved.felt !== 'green') data.felt = saved.felt;
+        if (typeof saved.cardBack === 'string' && saved.cardBack !== 'red')
+          data.cardback = saved.cardBack;
+        if (typeof saved.accent === 'string' && saved.accent !== 'gold') data.accent = saved.accent;
       } catch (e) {}
     </script>
     <meta
