@@ -4,7 +4,9 @@
   min-height: 100dvh;
   padding: calc(var(--space-6) + var(--safe-top)) calc(var(--space-4) + var(--safe-right))
     calc(var(--space-6) + var(--safe-bottom)) calc(var(--space-4) + var(--safe-left));
-  background: var(--color-bg);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, var(--color-room-glow), transparent 70%),
+    var(--color-bg);
 }
 
 .panel {
@@ -382,4 +384,63 @@
 .row .secondary,
 .row .primary {
   flex: 1;
+}
+
+/* ---- Color swatches (AGENTS.md §32.3) -------------------------------------------------- */
+
+.swatchField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.swatchLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.swatchValue {
+  color: var(--color-text-muted);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.swatch {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 3px var(--color-surface);
+  cursor: pointer;
+  transition: border-color calc(var(--duration-fade) * var(--anim-scale));
+}
+
+.swatch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.swatch:has(input:checked) {
+  border-color: var(--color-accent);
+  box-shadow:
+    inset 0 0 0 3px var(--color-surface),
+    0 0 0 2px var(--color-accent-soft);
+}
+
+.swatch:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

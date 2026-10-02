@@ -27,7 +27,7 @@ import { pickNames } from './names.ts';
 import { LocalNpcDriver, type NpcDriver, type NpcSeat } from './npc-driver.ts';
 import type { RngFactory } from './rng-factory.ts';
 import { type Settings, SettingsStore } from './settings.ts';
-import { applyTheme } from './theme.ts';
+import { applyAppearance, applyTheme } from './theme.ts';
 import {
   DEFAULT_SETUP,
   type GameSetup,
@@ -160,6 +160,9 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
   useEffect(() => {
     applyTheme(settings.theme);
   }, [settings.theme]);
+  useEffect(() => {
+    applyAppearance(settings);
+  }, [settings]);
 
   const buildController = (setup: GameSetup, restore?: SavedGame): GameController => {
     const deckRng = rngs.deck();

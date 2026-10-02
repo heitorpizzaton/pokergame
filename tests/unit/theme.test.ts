@@ -1,8 +1,14 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, loadSettings } from '../../src/app/settings.ts';
-import { applyTheme, THEME_COLORS } from '../../src/app/theme.ts';
+import {
+  ACCENT_COLORS,
+  CARD_BACK_COLORS,
+  DEFAULT_SETTINGS,
+  FELT_COLORS,
+  loadSettings,
+} from '../../src/app/settings.ts';
+import { applyAppearance, applyTheme, THEME_COLORS } from '../../src/app/theme.ts';
 
 const TOKENS = readFileSync('src/ui/theme/tokens.css', 'utf8');
 
@@ -65,8 +71,9 @@ describe('Tema setting (AGENTS.md §30.2)', () => {
   });
 });
 
+const light = block(':root {');
+
 describe('design tokens (AGENTS.md §30.2)', () => {
-  const light = block(':root {');
   const dark = block(":root[data-theme='dark'] {");
   const media = block(":root:not([data-theme='light']) {");
 
@@ -96,21 +103,69 @@ describe('design tokens (AGENTS.md §30.2)', () => {
   });
 });
 
-describe('no casino styling left (AGENTS.md §30.1)', () => {
+describe('casino look and personalisation (AGENTS.md §32)', () => {
   const sources = files('src/ui').filter((f) => /\.(css|tsx)$/.test(f));
-
-  it('uses no blur, glass, gold, felt, rail or noise textures', () => {
-    for (const file of sources) {
-      const text = readFileSync(file, 'utf8');
-      expect(text, file).not.toMatch(/backdrop-filter|--blur|--color-glass|--color-gold/);
-      expect(text, file).not.toMatch(/--texture-noise|--color-felt|--color-rail|--color-room/);
-    }
-  });
 
   it('keeps colors in the tokens: no hardcoded colors in component styles', () => {
     for (const file of sources.filter((f) => !f.endsWith('tokens.css'))) {
       const text = readFileSync(file, 'utf8');
       expect(text, file).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/);
     }
+  });
+
+  it('uses no backdrop blur, which is costly on phones (AGENTS.md §12)', () => {
+    for (const file of sources)
+      expect(readFileSync(file, 'utf8'), file).not.toMatch(/backdrop-filter/);
+  });
+
+  it('defines every felt, card back and accent option, with a swatch for each', () => {
+    const options = { felt: FELT_COLORS, cardback: CARD_BACK_COLORS, accent: ACCENT_COLORS };
+    const defaults = { felt: 'green', cardback: 'red', accent: 'gold' };
+    for (const [name, values] of Object.entries(options)) {
+      for (const value of values) {
+        expect(light.has(`--swatch-${name}-${value}`), `${name} ${value}`).toBe(true);
+        if (value === defaults[name as keyof typeof defaults]) continue;
+        expect(TOKENS, `${name} ${value}`).toContain(`:root[data-${name}='${value}'] {`);
+      }
+    }
+    // Accents need dark values too, for the explicit choice and for the media query.
+    for (const accent of ACCENT_COLORS.filter((a) => a !== 'gold')) {
+      expect(TOKENS).toContain(`:root[data-theme='dark'][data-accent='${accent}'] {`);
+      expect(TOKENS).toContain(`:root:not([data-theme='light'])[data-accent='${accent}'] {`);
+    }
+  });
+
+  it('stores only valid choices and applies them as attributes on <html>', () => {
+    const stored = (value: unknown) => ({ getItem: () => JSON.stringify(value) });
+    expect(DEFAULT_SETTINGS).toMatchObject({ felt: 'green', cardBack: 'red', accent: 'gold' });
+    expect(loadSettings(stored({ felt: 'blue', cardBack: 'black', accent: 'ruby' }))).toMatchObject(
+      {
+        felt: 'blue',
+        cardBack: 'black',
+        accent: 'ruby',
+      },
+    );
+    expect(loadSettings(stored({ felt: 'pink', cardBack: 1, accent: null }))).toMatchObject({
+      felt: 'green',
+      cardBack: 'red',
+      accent: 'gold',
+    });
+
+    const attributes = new Map<string, string>();
+    const doc = {
+      documentElement: {
+        setAttribute: (k: string, v: string) => attributes.set(k, v),
+        removeAttribute: (k: string) => attributes.delete(k),
+      },
+    } as unknown as Document;
+    applyAppearance({ felt: 'blue', cardBack: 'black', accent: 'ruby' }, doc);
+    expect(Object.fromEntries(attributes)).toEqual({
+      'data-felt': 'blue',
+      'data-cardback': 'black',
+      'data-accent': 'ruby',
+    });
+    applyAppearance({ felt: 'green', cardBack: 'red', accent: 'gold' }, doc);
+    expect(attributes.size).toBe(0);
+    expect(readFileSync('index.html', 'utf8')).toContain('data.felt = saved.felt');
   });
 });

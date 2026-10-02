@@ -8,19 +8,19 @@ test('Automático follows the device; a pinned theme persists across reloads', a
   const html = page.locator('html');
   await expect(html).not.toHaveAttribute('data-theme', /.*/);
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(await bg()).toBe('rgb(14, 20, 18)');
+  expect(await bg()).toBe('rgb(12, 10, 8)');
 
   await page.getByRole('button', { name: strings.menu.settings }).click();
   await page.getByTestId('theme-setting').selectOption('light');
   await expect(html).toHaveAttribute('data-theme', 'light');
-  expect(await bg()).toBe('rgb(244, 246, 245)');
+  expect(await bg()).toBe('rgb(245, 240, 230)');
 
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', 'light');
-  expect(await bg()).toBe('rgb(244, 246, 245)');
+  expect(await bg()).toBe('rgb(245, 240, 230)');
 
   await page.getByRole('button', { name: strings.menu.settings }).click();
   await page.getByTestId('theme-setting').selectOption('auto');
   await expect(html).not.toHaveAttribute('data-theme', /.*/);
-  expect(await bg()).toBe('rgb(14, 20, 18)');
+  expect(await bg()).toBe('rgb(12, 10, 8)');
 });

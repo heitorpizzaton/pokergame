@@ -168,3 +168,13 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 - [x] Lifetime statistics: `app/lifetime-stats.ts`, "Estatísticas" screen with reset and confirmation (31.3.3)
 - [x] Tests: `tests/unit/modes.test.ts`, `tests/e2e/modes.spec.ts`; visual baselines regenerated in CI (commit `bf195d7`)
 - [ ] **Accept:** the owner approves on their phone
+
+## Phase Y1 — Casino look, dealer and personalisation (AGENTS.md §32)
+
+- [x] Casino tokens: felt, leather rail, brass trim, warm surroundings, gold accent, red card backs; light and dark (32.1, ADR-035)
+- [x] Dealer at the top centre with chip tray and deck; seats leave the dealer's place free; cards and burns come from the deck (32.2)
+- [x] Configurações → Aparência: felt, card backs and accent, applied before the first paint (32.3)
+- [x] Setup screen redesign: cards, segmented controls, blind presets by depth, sticky summary (32.4)
+- [x] App icons in felt and gold
+- [x] Tests: `tests/unit/table-layout.test.ts`, `tests/unit/theme.test.ts` (updated to §32), `tests/e2e/appearance.spec.ts`
+- [ ] **Accept:** the owner approves on their phone

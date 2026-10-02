@@ -4,6 +4,46 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-035 — Casino look from the owner's photo, a dealer seat, and personalisation (Phase Y1)
+
+- **Date:** 2026-10-02
+- **Context:** the owner asked for four changes, recorded in AGENTS.md §32:
+  - a nicer Setup screen;
+  - a dealer at the table, from whom the cards come;
+  - color choices;
+  - a whole interface based on a photo of a casino poker room.
+
+  This reverses the "clean web app" direction of §30.1 (ADR-031).
+
+- **Decision:**
+  - **Tokens.** The token system stays: semantic names, light and dark blocks kept in sync, and no hardcoded colors in components. The new palettes are:
+    - **Dark:** warm near-black with gold.
+    - **Light:** ivory with gold.
+    - **Table (both themes):** felt colors `--color-felt*`, rail colors `--color-rail*` and `--color-trim`.
+  - **Table.** The felt is a radial gradient. The trim and the leather rail are rings of `box-shadow`, so they follow the oval at any size without images.
+  - **Personalisation.** Three settings (`felt`, `cardBack`, `accent`) map to `data-felt`, `data-cardback` and `data-accent` on `<html>`. `applyAppearance` sets them, and the inline script in `index.html` sets them before the first paint.
+    - Felt and card backs do not depend on the theme.
+    - Accents have light values plus dark values, for both the explicit choice and the media query, ordered so specificity picks the right pair.
+    - Each option has a `--swatch-*` token for the picker.
+  - **Dealer.** `seatPositions` leaves a gap at the top centre and spaces the seats evenly over the rest of the oval; `dealerPosition` gives the dealer's place.
+    - The user stays at the bottom centre, and odd tables are symmetric.
+    - Even tables leave one empty spot beside the dealer.
+    - Heads-up puts the opponent at the top left.
+    - The deal and burn animations start from the deck in front of the dealer. On narrow tables the dealer shows only the icon.
+  - **Setup.** The new layout is described in §32.4. The segmented controls are real radio inputs, so they stay accessible and testable. The blind presets use `blindsForDepth`: an even big blind and a small blind of half.
+  - **Tests.**
+    - The §30 test that banned casino tokens is replaced by tests for every option block, swatch and setting.
+    - The bans on hardcoded colors and backdrop blur stay.
+- **Alternatives considered:**
+  - **Photographic textures (felt, leather):** rejected. They are heavy, need licenses, and do not recolor for the options.
+  - **A drawn dealer character:** rejected for now, after the 3D experience (ADR-030). A dealer plate with an icon, a chip tray and the deck reads clearly at 360 px.
+- **Consequences:**
+  - Every visual baseline changes.
+  - The PWA icons are now a gold spade on felt.
+  - ADR-031's look is superseded; its token and theme mechanics remain.
+
+---
+
 ## ADR-034 — Game modes: rising blinds as an engine command, level mixes, local lifetime stats (Phase X3)
 
 - **Date:** 2026-10-02
