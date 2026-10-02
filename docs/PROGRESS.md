@@ -137,3 +137,30 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 - [x] axe checks pass in both themes on every screen (`tests/e2e/a11y.spec.ts`)
 - [x] Visual regression baselines for portrait/landscape × light/dark regenerated in CI (commit `908adc6`)
 - [ ] **Accept:** the owner approves the deployed preview on their phone
+
+## Phase X1 — Game feel (AGENTS.md §31.1)
+
+- [x] Visible action timer above the action bar, with the time bank state and a warning color (31.1.1)
+- [x] Equity hidden by default: "Ver probabilidades" pill, no computation while minimized (31.1.2)
+- [x] Shared pacing table: slower deal, burn card, flop card by card, street pause (31.1.3, ADR-032)
+- [x] Fold animation to the muck (31.1.4)
+- [x] Sequential showdown in showdown order (31.1.5)
+- [x] Pot and stack count-up (31.1.6)
+- [x] NPC thinking dots (31.1.7)
+- [x] Sliding dealer button (31.1.8)
+- [x] pt-BR plurals "Três" and "Dez" (31.1.9)
+- [x] Tests: `tests/unit/pacing.test.ts`, `tests/e2e/game-feel.spec.ts`, odds tests updated to the hidden pill
+- [ ] **Accept:** the owner approves the feel on their phone
+
+## Phase X2 — Learning aids (AGENTS.md §31.2)
+
+- [ ] Made hand always visible
+- [ ] Opponent profile sheet
+- [ ] Hand log
+- [ ] First-game tips
+
+## Phase X3 — Game modes (AGENTS.md §31.3)
+
+- [ ] Tournament mode with rising blinds
+- [ ] Opponent level
+- [ ] Lifetime statistics
