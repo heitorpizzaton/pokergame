@@ -176,5 +176,5 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 - [x] Configurações → Aparência: felt, card backs and accent, applied before the first paint (32.3)
 - [x] Setup screen redesign: cards, segmented controls, blind presets by depth, sticky summary (32.4)
 - [x] App icons in felt and gold
-- [x] Tests: `tests/unit/table-layout.test.ts`, `tests/unit/theme.test.ts` (updated to §32), `tests/e2e/appearance.spec.ts`
+- [x] Tests: `tests/unit/table-layout.test.ts`, `tests/unit/theme.test.ts` (updated to §32), `tests/e2e/appearance.spec.ts`; visual baselines regenerated in CI (commit `20d1827`)
 - [ ] **Accept:** the owner approves on their phone

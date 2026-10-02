@@ -40,6 +40,10 @@ AGENTS.md §32 and ADR-035:
 - `tests/unit/theme.test.ts`.
 - `tests/e2e/appearance.spec.ts`.
 
+### Known issues
+
+- **Landscape phones with 9 players** (for example 844×390) are crowded. The dealer button can sit on the user's second card, and the right-hand seats overlap. The same overlaps exist in the baselines from before this phase, so this is not a regression. A follow-up could shrink seats on short landscape screens.
+
 ---
 
 ## 2026-10-02 (session 1, part 19) — Claude — Phase X3: game modes
