@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 import type { StyleId } from '../../ai/index.ts';
 import type { UserClock } from '../../app/game-controller.ts';
 import type { Card } from '../../core/cards/index.ts';
@@ -49,6 +49,10 @@ interface Props {
   readonly muck?: { readonly x: number; readonly y: number };
   /** Stack changes count up over this many milliseconds (0: immediately). */
   readonly countMs?: number;
+  /** The user's current hand, shown under their seat (AGENTS.md §31.2.1). */
+  readonly madeHand?: string | null;
+  /** Opens this opponent's profile (AGENTS.md §31.2.2). */
+  readonly onSelect?: () => void;
 }
 
 function actionLabel(action: ActionRecord): string {
@@ -147,7 +151,25 @@ export function Seat(props: Props) {
           ))}
         </div>
       )}
-      <div className={styles.plate}>
+      <div
+        className={`${styles.plate} ${props.onSelect ? styles.selectable : ''}`}
+        {...(props.onSelect
+          ? {
+              role: 'button',
+              tabIndex: 0,
+              'aria-label': strings.table.profile.open(name),
+              onClick: (e: MouseEvent) => {
+                e.stopPropagation();
+                props.onSelect?.();
+              },
+              onKeyDown: (e: KeyboardEvent) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                props.onSelect?.();
+              },
+            }
+          : {})}
+      >
         <span
           className={styles.avatar}
           style={{ ['--hue' as string]: String(avatarHue(seat.name)) }}
@@ -176,6 +198,11 @@ export function Seat(props: Props) {
           </span>
         )}
       </div>
+      {props.madeHand && (
+        <span className={styles.madeHand} data-testid="made-hand">
+          {props.madeHand}
+        </span>
+      )}
       {props.thinking && (
         <span className={styles.thinking} role="status" aria-label={strings.table.thinking(name)}>
           <span />
