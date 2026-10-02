@@ -4,6 +4,45 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-10-02 (session 1, part 19) — Claude — Phase X3: game modes
+
+**Owner action needed:** after X2 and X3 merge, try on your phone:
+
+1. Nova partida → "Os blinds: Sobem como num torneio". The header shows "Nível N · sobe em X mãos", and a banner announces each rise.
+2. "Nível dos oponentes" (Iniciante / Normal / Difícil).
+3. Menu → "Estatísticas" after finishing a game.
+
+Then tell me what to adjust. With this, every item of AGENTS.md §31 is implemented.
+
+**Branch:** `feat/phase-x3-modes`, based on `feat/phase-x2-learning`.
+
+### Done
+
+- **Tournament blinds:**
+  - engine `setBlinds` and `BlindsChanged`;
+  - `app/blind-schedule.ts`;
+  - the controller's `tournament` snapshot and save;
+  - the header level and raise banner.
+
+  See ADR-034 and `docs/RULES.md` §1.
+
+- **Opponent level:** mixes per level, documented in `docs/AI.md`.
+- **Lifetime statistics:** `app/lifetime-stats.ts`, `StatsScreen`, and `onGameOver(outcome)`.
+
+### Exact next step
+
+- Merge X2 (PR #21), then merge `main` into this branch.
+- Open the X3 PR with the `update-visual-baselines` label. After the bot's baseline commit, push a real commit so CI runs, then merge when green.
+- Afterwards, only owner feedback remains for X1–X3 acceptance.
+
+### Verification
+
+- `npm run check`.
+- `tests/unit/modes.test.ts` (15 tests).
+- `tests/e2e/modes.spec.ts`.
+
+---
+
 ## 2026-10-02 (session 1, part 18) — Claude — Phase X2: learning aids
 
 **Owner action needed:** after this merges, open a new game on your phone. Check:

@@ -47,6 +47,8 @@ export type EngineEvent =
       readonly value: HandValue;
     }
   | { readonly type: 'Mucked'; readonly seat: number }
+  /** Tournament mode raised the blinds between hands (AGENTS.md §31.3.1). */
+  | { readonly type: 'BlindsChanged'; readonly smallBlind: number; readonly bigBlind: number }
   | {
       readonly type: 'PotAwarded';
       readonly potIndex: number;

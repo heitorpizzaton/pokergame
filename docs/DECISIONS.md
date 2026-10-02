@@ -4,6 +4,44 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-034 — Game modes: rising blinds as an engine command, level mixes, local lifetime stats (Phase X3)
+
+- **Date:** 2026-10-02
+- **Context:** AGENTS.md §31.3 adds three modes:
+  - tournament blinds;
+  - an opponent level;
+  - lifetime statistics.
+
+  The engine must own the blind rule (§4.1), and chips stay integers.
+
+- **Decision:**
+  - **Engine command `setBlinds`.**
+    - It is accepted only between hands; otherwise it throws `HandInProgress`, or `GameOver` once the game has ended.
+    - Blinds are validated like the setup's (integers, SB ≥ 1, BB > SB), and the command emits `BlindsChanged`.
+    - `GameState.config` is now mutable, so a snapshot carries the current blinds. `restore` skips only the "stack ≥ 10 BB" setup rule, which stops holding once blinds rise.
+  - **Schedule outside the engine.** `app/blind-schedule.ts` is pure:
+    - `blindsAtLevel` multiplies the big blind by 1.5, rounds it up to a nice value, and sets the small blind to half of it, rounded down.
+    - The result is strictly increasing and integer; property-style tests cover several starts.
+    - Before each hand, the controller computes the level from `handNumber` and dispatches `setBlinds` when it differs.
+    - The schedule is stored in `SavedGame.blindSchedule`. "Jogar novamente" starts from level 1.
+    - The snapshot carries `tournament: {level, handsLeft, raised}` for the header and the "Os blinds subiram" banner.
+    - Hand history already records each hand's config, so each hand's blinds are recorded too.
+  - **Opponent level.** `randomStyles(count, rng, level)` uses per-level weights and a per-level maniac cap. `normal` keeps the old weights and draw order, so seeded games are unchanged. Choosing styles per seat ignores the level.
+  - **Lifetime statistics.**
+    - `onGameOver` now receives a `GameOutcome`: place, players, the raw session counters and the duration.
+    - The app adds it to `mesa-viva:lifetime-stats` in localStorage once per game, whether the user busts or wins. Abandoned games do not count.
+    - The loader accepts only non-negative integers, so corrupt data reads as empty.
+    - The "Estatísticas" screen is lazy-loaded from the menu, with a confirmed reset.
+- **Alternatives considered:**
+  - **The controller rewriting the config directly:** rejected. It would put a rule outside the engine and skip validation.
+  - **Antes or time-based levels:** out of scope (§5.1 has no antes; time-based levels would depend on the speed setting).
+  - **IndexedDB for lifetime stats:** unnecessary, as the data is a dozen counters.
+- **Consequences:**
+  - The menu gains a button, Setup gains two controls, and the header gains a level line in tournament mode.
+  - The visual baselines change.
+
+---
+
 ## ADR-033 — Learning aids from public information only (Phase X2)
 
 - **Date:** 2026-10-02

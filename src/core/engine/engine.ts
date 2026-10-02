@@ -19,7 +19,9 @@ import type { GameConfig, GameState, HandPlayer, HandState, SeatState } from './
 export type EngineCommand =
   | { readonly type: 'startHand' }
   | { readonly type: 'act'; readonly seat: number; readonly action: PlayerAction }
-  | { readonly type: 'reveal'; readonly seat: number };
+  | { readonly type: 'reveal'; readonly seat: number }
+  /** Tournament mode (AGENTS.md §31.3.1): new blinds, only between hands. */
+  | { readonly type: 'setBlinds'; readonly smallBlind: number; readonly bigBlind: number };
 
 const NEXT_STREET: Readonly<Record<Street, Street | null>> = {
   preflop: 'flop',
@@ -75,7 +77,8 @@ export class PokerEngine {
     if (snapshot.hand !== null) {
       throw new EngineError('InvalidSnapshot', 'Snapshots must be taken between hands');
     }
-    validateConfig(snapshot.config);
+    // Rising blinds may exceed a tenth of the starting stack, so only the blinds are checked here.
+    validateConfig(snapshot.config, { setupRules: false });
     const total = snapshot.seats.reduce((sum, s) => sum + s.stack, 0);
     const expected = snapshot.config.startingStack * snapshot.config.players.length;
     if (total !== expected || snapshot.seats.length !== snapshot.config.players.length) {
@@ -121,6 +124,9 @@ export class PokerEngine {
         break;
       case 'reveal':
         this.#reveal(command.seat, events);
+        break;
+      case 'setBlinds':
+        this.#setBlinds(command.smallBlind, command.bigBlind, events);
         break;
     }
     return events;
@@ -239,6 +245,14 @@ export class PokerEngine {
 
   // ---------------------------------------------------------------------------------------
   // Hand lifecycle
+
+  #setBlinds(smallBlind: number, bigBlind: number, events: EngineEvent[]): void {
+    if (this.#state.finished) throw new EngineError('GameOver', 'The game is over');
+    if (this.isHandInProgress) throw new EngineError('HandInProgress', 'A hand is in progress');
+    validateBlinds(smallBlind, bigBlind);
+    this.#state.config = { ...this.#state.config, smallBlind, bigBlind };
+    events.push({ type: 'BlindsChanged', smallBlind, bigBlind });
+  }
 
   #startHand(events: EngineEvent[]): void {
     const state = this.#state;
@@ -793,16 +807,30 @@ export class PokerEngine {
   }
 }
 
-function validateConfig(config: GameConfig): void {
+function validateBlinds(smallBlind: number, bigBlind: number): void {
+  const fail = (message: string): never => {
+    throw new EngineError('InvalidConfig', message);
+  };
+  if (!Number.isSafeInteger(smallBlind) || !Number.isSafeInteger(bigBlind)) {
+    fail('Chip amounts must be integers');
+  }
+  if (smallBlind < 1) fail('The small blind must be at least 1');
+  if (bigBlind <= smallBlind) fail('The big blind must be larger than the small blind');
+}
+
+/**
+ * `setupRules` adds the Setup screen's rule (a stack of at least 10 big blinds, §5.1), which
+ * holds when a game starts but not after tournament blinds have risen.
+ */
+function validateConfig(config: GameConfig, { setupRules = true } = {}): void {
   const { players, startingStack, smallBlind, bigBlind } = config;
   const fail = (message: string): never => {
     throw new EngineError('InvalidConfig', message);
   };
   if (players.length < 2 || players.length > 9) fail('The table needs 2 to 9 players');
-  for (const value of [startingStack, smallBlind, bigBlind]) {
-    if (!Number.isSafeInteger(value)) fail('Chip amounts must be integers');
+  if (!Number.isSafeInteger(startingStack)) fail('Chip amounts must be integers');
+  validateBlinds(smallBlind, bigBlind);
+  if (setupRules && startingStack < 10 * bigBlind) {
+    fail('The starting stack must be at least 10 big blinds');
   }
-  if (smallBlind < 1) fail('The small blind must be at least 1');
-  if (bigBlind <= smallBlind) fail('The big blind must be larger than the small blind');
-  if (startingStack < 10 * bigBlind) fail('The starting stack must be at least 10 big blinds');
 }

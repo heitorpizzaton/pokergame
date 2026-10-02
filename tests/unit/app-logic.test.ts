@@ -46,6 +46,8 @@ describe('setup validation (AGENTS.md §5.1)', () => {
       smallBlind: 25,
       bigBlind: 50,
       opponents: 'random' as const,
+      blindLevelHands: 15,
+      opponentLevel: 'hard' as const,
     };
     saveLastSetup(storage, setup);
     expect(loadLastSetup(storage)).toEqual(setup);

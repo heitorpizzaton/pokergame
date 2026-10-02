@@ -4,7 +4,8 @@ This document describes No-Limit Texas Hold'em exactly as `src/core/engine` impl
 
 ## 1. Table and game
 
-- 2 to 9 players, all starting with the same stack (freezeout, no rebuys, no antes). Blinds are fixed for the whole game.
+- 2 to 9 players, all starting with the same stack (freezeout, no rebuys, no antes). Blinds are fixed for the whole game by default.
+- **Tournament mode (optional, AGENTS.md §31.3.1):** the blinds rise every N hands (N = 5, 10, 15 or 20; 10 by default). Each level multiplies the big blind by 1.5 and rounds it up to a "nice" value (1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6 or 8 × 10ⁿ). The small blind is half the big blind, rounded down. Example from 50/100: 75/150 → 125/250 → 200/400 → 300/600 → 500/1.000. The blinds change only between hands, and the engine validates them (`setBlinds`). The 10 BB minimum applies only to the starting stack.
 - Validation: `SB ≥ 1`, `BB > SB`, and the starting stack must be at least 10 BB. (The Setup screen also warns below 20 BB.)
 - Seats are numbered `0 … n-1` clockwise. "Left of X" means the next seat clockwise from X.
 - The initial button is chosen uniformly at random with the secure RNG.

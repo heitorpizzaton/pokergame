@@ -151,6 +151,15 @@ export function TableScreen({
           <span className={styles.blinds}>
             {strings.table.blindsLabel(view.smallBlind, view.bigBlind)}
           </span>
+          {snap.tournament && (
+            <span
+              className={`${styles.level} ${snap.tournament.raised ? styles.levelRaised : ''}`}
+              data-testid="blind-level"
+            >
+              {strings.table.level.label(snap.tournament.level)} ·{' '}
+              {strings.table.level.next(snap.tournament.handsLeft)}
+            </span>
+          )}
         </span>
         {snap.phase === 'watching' ? (
           <button
@@ -369,6 +378,11 @@ export function TableScreen({
             />
           )}
           <Pots snapshot={snap} />
+          {snap.tournament?.raised && snap.boardShown === 0 && !snap.result && (
+            <div className={`${styles.banner} ${styles.levelBanner}`} data-testid="blinds-raised">
+              {strings.table.level.raised(view.smallBlind, view.bigBlind)}
+            </div>
+          )}
           <ResultBanner
             snapshot={snap}
             onContinue={() => {
@@ -635,6 +649,9 @@ function announcement(snap: TableSnapshot): string {
     return strings.table.yourTurnWith(cards, call);
   }
   if (snap.phase === 'handResult') return resultLines(snap).join('. ');
+  if (snap.phase === 'dealing' && snap.tournament?.raised) {
+    return strings.table.level.raised(view.smallBlind, view.bigBlind);
+  }
   return '';
 }
 

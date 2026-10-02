@@ -1,4 +1,5 @@
-import { STYLE_IDS, type StyleId } from '../ai/index.ts';
+import { OPPONENT_LEVELS, type OpponentLevel, STYLE_IDS, type StyleId } from '../ai/index.ts';
+import { BLIND_LEVEL_CHOICES } from './blind-schedule.ts';
 import type { GameConfig } from '../core/engine/index.ts';
 
 /** What the user chooses on the Setup screen (AGENTS.md §5.1). */
@@ -9,6 +10,10 @@ export interface GameSetup {
   readonly bigBlind: number;
   /** 'random' for a realistic mix, or one style per opponent (AGENTS.md §5.1, §8.3). */
   readonly opponents: 'random' | readonly StyleId[];
+  /** Tournament mode: hands per blind level, or null for fixed blinds (AGENTS.md §31.3.1). */
+  readonly blindLevelHands: number | null;
+  /** Strength of the random mix (AGENTS.md §31.3.2). Ignored when styles are chosen per seat. */
+  readonly opponentLevel: OpponentLevel;
 }
 
 export const DEFAULT_SETUP: GameSetup = {
@@ -17,6 +22,8 @@ export const DEFAULT_SETUP: GameSetup = {
   smallBlind: 50,
   bigBlind: 100,
   opponents: 'random',
+  blindLevelHands: null,
+  opponentLevel: 'normal',
 };
 
 /** The chosen style for each opponent, padding or trimming to the table size. */
@@ -93,6 +100,9 @@ export function loadLastSetup(storage: Pick<Storage, 'getItem'> | null): GameSet
       smallBlind: Number(parsed.smallBlind ?? DEFAULT_SETUP.smallBlind),
       bigBlind: Number(parsed.bigBlind ?? DEFAULT_SETUP.bigBlind),
       opponents,
+      blindLevelHands: BLIND_LEVEL_CHOICES.find((n) => n === parsed.blindLevelHands) ?? null,
+      opponentLevel:
+        OPPONENT_LEVELS.find((l) => l === parsed.opponentLevel) ?? DEFAULT_SETUP.opponentLevel,
     };
     return checkSetup(setup).errors.length === 0 ? setup : DEFAULT_SETUP;
   } catch {

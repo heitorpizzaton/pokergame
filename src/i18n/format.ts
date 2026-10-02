@@ -22,6 +22,11 @@ export function formatBigBlinds(amount: number, bigBlind: number): string {
   return `${text} BB`;
 }
 
+/** A number with one decimal, e.g. 2.45 → "2,5". */
+export function formatDecimal(value: number): string {
+  return oneDecimal.format(value);
+}
+
 /** Elapsed time as "12 min" or "1 h 05 min". */
 export function formatDuration(ms: number): string {
   const minutes = Math.max(0, Math.round(ms / 60_000));

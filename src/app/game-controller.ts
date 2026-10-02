@@ -14,6 +14,13 @@ import type { HandValue } from '../core/eval/index.ts';
 import { commitDeck, newSalt } from '../core/fairness/index.ts';
 import { CryptoRng, type Rng } from '../core/rng/index.ts';
 import type { ActionRecord, PlayerAction, PlayerView } from '../core/view/index.ts';
+import {
+  type BlindSchedule,
+  blindsAtLevel,
+  handsToNextLevel,
+  levelForHand,
+} from './blind-schedule.ts';
+import type { GameOutcome } from './lifetime-stats.ts';
 import type { NpcDriver } from './npc-driver.ts';
 import { dealDurationMs, PACING, type Speed, streetRevealMs } from './pacing.ts';
 import {
@@ -129,6 +136,17 @@ export interface TableSnapshot {
   readonly hiddenShowdown: readonly number[];
   /** What the table has seen of each opponent in this game (AGENTS.md §31.2.2), by seat. */
   readonly opponents: Readonly<Record<number, OpponentSummary>>;
+  /** Rising blinds (AGENTS.md §31.3.1); null when the blinds are fixed. */
+  readonly tournament: TournamentState | null;
+}
+
+export interface TournamentState {
+  /** Blind level of the current hand, from 1. */
+  readonly level: number;
+  /** Hands left at this level, counting the current one (1 = the last hand of the level). */
+  readonly handsLeft: number;
+  /** The blinds went up at the start of the current hand. */
+  readonly raised: boolean;
 }
 
 /** Revealed after the hand so the commitment can be checked (AGENTS.md §14, Phase 8). */
@@ -161,6 +179,8 @@ export interface SavedGame {
   readonly startedAt: number;
   /** Public statistics of each opponent (absent in saves from before Phase X2). */
   readonly opponents?: Readonly<Record<number, OpponentRecord>>;
+  /** Rising blinds (AGENTS.md §31.3.1); absent when the blinds are fixed. */
+  readonly blindSchedule?: BlindSchedule;
 }
 
 export interface TimerSettings {
@@ -201,12 +221,17 @@ export interface ControllerOptions {
   readonly styles?: readonly (StyleId | null)[];
   readonly timer?: TimerSettings;
   readonly rabbitHunt?: boolean;
+  /** Rising blinds (AGENTS.md §31.3.1); omit for fixed blinds. Ignored when restoring. */
+  readonly blindSchedule?: BlindSchedule;
   /** Resume a saved game instead of starting a new one. */
   readonly restore?: SavedGame;
   /** Called between hands with a save of the game (autosave, AGENTS.md §5.8). */
   readonly onSave?: (save: SavedGame) => void;
-  /** Called when the game ends or the user busts (the autosave is discarded). */
-  readonly onGameOver?: () => void;
+  /**
+   * Called once when the game ends for the user, busted or winning (the autosave is discarded),
+   * with how it ended (lifetime statistics, AGENTS.md §31.3.3).
+   */
+  readonly onGameOver?: (outcome: GameOutcome) => void;
   /** Called with each finished hand (hand history, AGENTS.md §10.2). */
   readonly onHandComplete?: (hand: CompletedHand) => void;
 }
@@ -233,6 +258,9 @@ export class GameController {
   readonly #userSeat: number;
   readonly #stats: SessionStatsTracker;
   readonly #opponents: OpponentStatsTracker;
+  readonly #blindSchedule: BlindSchedule | null;
+  /** Hand number at whose start the blinds last went up. */
+  #blindsRaisedHand: number | null = null;
   readonly #listeners = new Set<() => void>();
   readonly #effectListeners = new Set<(effect: TableEffect) => void>();
   readonly #options: ControllerOptions;
@@ -292,6 +320,7 @@ export class GameController {
     this.#startedAt = saved?.startedAt ?? this.#scheduler.now();
     this.#stats = new SessionStatsTracker(this.#userSeat, this.#startedAt, saved?.stats);
     this.#opponents = new OpponentStatsTracker(saved?.opponents);
+    this.#blindSchedule = (saved ? saved.blindSchedule : options.blindSchedule) ?? null;
     this.#timerSettings = options.timer ?? { actionMs: null, bankMs: 30_000 };
     this.#timeBankMs = saved?.timeBankMs ?? this.#timerSettings.bankMs;
     this.#userHands = saved?.userHands ?? 0;
@@ -441,6 +470,7 @@ export class GameController {
     this.#clearTimer();
     while (!this.#engine.isFinished) {
       if (!this.#engine.isHandInProgress) {
+        this.#applyBlindLevel();
         this.#record(this.#engine.dispatch({ type: 'startHand' }));
         continue;
       }
@@ -472,6 +502,7 @@ export class GameController {
       this.#finishGame();
       return;
     }
+    this.#applyBlindLevel();
     this.#options.onSave?.(this.#save());
     this.#lastActions = {};
     this.#result = null;
@@ -731,7 +762,13 @@ export class GameController {
   #notifyGameOver(): void {
     if (this.#gameOverNotified) return;
     this.#gameOverNotified = true;
-    this.#options.onGameOver?.();
+    const seats = this.#engine.state.seats;
+    this.#options.onGameOver?.({
+      place: seats[this.#userSeat]?.place ?? 1,
+      players: seats.length,
+      stats: this.#stats.save(),
+      durationMs: (this.#endedAt ?? this.#scheduler.now()) - this.#startedAt,
+    });
   }
 
   #dispatchAct(seat: number, action: PlayerAction): void {
@@ -886,6 +923,30 @@ export class GameController {
     }
   }
 
+  /** Tournament mode: raises the blinds when the next hand starts a new level (§31.3.1). */
+  #applyBlindLevel(): void {
+    const schedule = this.#blindSchedule;
+    if (!schedule) return;
+    const state = this.#engine.state;
+    const next = blindsAtLevel(schedule, levelForHand(state.handNumber, schedule.everyHands));
+    const { smallBlind, bigBlind } = state.config;
+    if (next.smallBlind === smallBlind && next.bigBlind === bigBlind) return;
+    this.#engine.dispatch({ type: 'setBlinds', ...next });
+    this.#blindsRaisedHand = state.handNumber + 1;
+  }
+
+  #tournament(): TournamentState | null {
+    const schedule = this.#blindSchedule;
+    if (!schedule) return null;
+    const { handNumber } = this.#engine.state;
+    const index = Math.max(0, handNumber - 1);
+    return {
+      level: levelForHand(index, schedule.everyHands) + 1,
+      handsLeft: handsToNextLevel(index, schedule.everyHands),
+      raised: handNumber > 0 && this.#blindsRaisedHand === handNumber,
+    };
+  }
+
   #save(): SavedGame {
     return {
       version: 1,
@@ -897,6 +958,7 @@ export class GameController {
       userHands: this.#userHands,
       startedAt: this.#startedAt,
       opponents: this.#opponents.save(),
+      ...(this.#blindSchedule ? { blindSchedule: this.#blindSchedule } : {}),
     };
   }
 
@@ -961,6 +1023,7 @@ export class GameController {
           seat === this.#userSeat ? [] : [[seat, this.#opponents.summary(seat)]],
         ),
       ),
+      tournament: this.#tournament(),
     };
   }
 

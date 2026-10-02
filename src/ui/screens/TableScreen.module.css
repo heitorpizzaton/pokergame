@@ -36,6 +36,19 @@
   color: var(--color-text-muted);
 }
 
+.level {
+  flex-basis: 100%;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.levelRaised {
+  color: var(--color-accent-text);
+}
+
 .headerButtons {
   display: flex;
   gap: var(--space-1);
@@ -288,6 +301,11 @@
   font-weight: 700;
   text-align: center;
   animation: toast calc(320ms * var(--anim-scale)) var(--ease-out) both;
+}
+
+.levelBanner {
+  font-size: 0.78rem;
+  pointer-events: none;
 }
 
 .runoutBanner {
