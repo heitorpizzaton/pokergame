@@ -22,16 +22,26 @@ import {
   type Speed,
   type TimerSettings,
 } from './game-controller.ts';
+import { clearLifetimeStats, loadLifetimeStats, recordGame } from './lifetime-stats.ts';
 import { pickNames } from './names.ts';
 import { LocalNpcDriver, type NpcDriver, type NpcSeat } from './npc-driver.ts';
 import type { RngFactory } from './rng-factory.ts';
 import { type Settings, SettingsStore } from './settings.ts';
 import { applyTheme } from './theme.ts';
-import { type GameSetup, loadLastSetup, saveLastSetup, toEngineConfig } from './setup.ts';
+import {
+  DEFAULT_SETUP,
+  type GameSetup,
+  loadLastSetup,
+  saveLastSetup,
+  toEngineConfig,
+} from './setup.ts';
 
 // AGENTS.md §12: history and the replayer are not part of the initial bundle.
 const HistoryScreen = lazy(() =>
   import('../ui/screens/HistoryScreen.tsx').then((m) => ({ default: m.HistoryScreen })),
+);
+const StatsScreen = lazy(() =>
+  import('../ui/screens/StatsScreen.tsx').then((m) => ({ default: m.StatsScreen })),
 );
 const GuideScreen = lazy(() =>
   import('../ui/screens/GuideScreen.tsx').then((m) => ({ default: m.GuideScreen })),
@@ -43,6 +53,7 @@ type Screen =
   | { readonly name: 'settings' }
   | { readonly name: 'history' }
   | { readonly name: 'guide' }
+  | { readonly name: 'stats' }
   | { readonly name: 'table'; readonly controller: GameController; readonly setup: GameSetup };
 
 function storage(): Storage | null {
@@ -125,12 +136,16 @@ function createHistoryStore(): HistoryStore {
 
 function setupFromSave(save: SavedGame): GameSetup {
   const { config } = save.state;
+  // "Jogar novamente" starts from the first blind level, not from where the blinds had risen to.
+  const blinds = save.blindSchedule ?? config;
   return {
     players: config.players.length,
     startingStack: config.startingStack,
-    smallBlind: config.smallBlind,
-    bigBlind: config.bigBlind,
+    smallBlind: blinds.smallBlind,
+    bigBlind: blinds.bigBlind,
     opponents: save.styles.filter((s): s is StyleId => s !== null),
+    blindLevelHands: save.blindSchedule?.everyHands ?? null,
+    opponentLevel: DEFAULT_SETUP.opponentLevel,
   };
 }
 
@@ -154,7 +169,7 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
       : [
           null,
           ...(setup.opponents === 'random'
-            ? randomStyles(setup.players - 1, npcRng)
+            ? randomStyles(setup.players - 1, npcRng, setup.opponentLevel)
             : [...setup.opponents]),
         ];
     const names = restore
@@ -172,11 +187,21 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
       styles,
       timer: timerFor(current),
       rabbitHunt: current.rabbitHunt,
+      ...(setup.blindLevelHands !== null
+        ? {
+            blindSchedule: {
+              everyHands: setup.blindLevelHands,
+              smallBlind: setup.smallBlind,
+              bigBlind: setup.bigBlind,
+            },
+          }
+        : {}),
       ...(restore ? { restore } : {}),
       onSave: (save) => {
         saveAutosave(storage(), save);
       },
-      onGameOver: () => {
+      onGameOver: (outcome) => {
+        recordGame(storage(), outcome);
         clearAutosave(storage());
         setAutosave(null);
       },
@@ -246,6 +271,9 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
           onGuide={() => {
             setScreen({ name: 'guide' });
           }}
+          onStats={() => {
+            setScreen({ name: 'stats' });
+          }}
         />
       );
     case 'setup':
@@ -275,6 +303,19 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
             onShowTips={() => {
               settingsStore.update({ tipsSeen: false });
             }}
+          />
+        </Suspense>
+      );
+    case 'stats':
+      return (
+        <Suspense fallback={null}>
+          <StatsScreen
+            stats={loadLifetimeStats(storage())}
+            onReset={() => {
+              clearLifetimeStats(storage());
+              setScreen({ name: 'stats' });
+            }}
+            onBack={toMenu}
           />
         </Suspense>
       );

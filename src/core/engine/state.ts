@@ -66,7 +66,8 @@ export interface HandState {
 }
 
 export interface GameState {
-  readonly config: GameConfig;
+  /** Blinds may change between hands in tournament mode (AGENTS.md §31.3.1). */
+  config: GameConfig;
   readonly seats: SeatState[];
   handNumber: number;
   /** Button of the most recent hand, or null before the first hand. */

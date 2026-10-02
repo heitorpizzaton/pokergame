@@ -10,13 +10,21 @@ interface Props {
   readonly onHistory: (() => void) | null;
   readonly onSettings: () => void;
   readonly onGuide: () => void;
+  readonly onStats: () => void;
 }
 
 /** A royal flush fanned above the title. */
 const FAN = parseCards('TsJsQsKsAs');
 const LIFT = [10, 3, 0, 3, 10];
 
-export function MenuScreen({ onNewGame, onContinue, onHistory, onSettings, onGuide }: Props) {
+export function MenuScreen({
+  onNewGame,
+  onContinue,
+  onHistory,
+  onSettings,
+  onGuide,
+  onStats,
+}: Props) {
   return (
     <main className={styles.screen} data-testid="menu-screen">
       <section className={styles.panel} aria-labelledby="app-title">
@@ -52,6 +60,9 @@ export function MenuScreen({ onNewGame, onContinue, onHistory, onSettings, onGui
               {strings.menu.history}
             </button>
           )}
+          <button type="button" className={styles.secondary} onClick={onStats}>
+            {strings.menu.stats}
+          </button>
           <button type="button" className={styles.secondary} onClick={onSettings}>
             {strings.menu.settings}
           </button>

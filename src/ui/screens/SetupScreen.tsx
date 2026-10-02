@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { STYLE_IDS, type StyleId } from '../../ai/index.ts';
+import { OPPONENT_LEVELS, STYLE_IDS, type StyleId } from '../../ai/index.ts';
+import { BLIND_LEVEL_CHOICES, DEFAULT_LEVEL_HANDS } from '../../app/blind-schedule.ts';
 import {
   BUY_IN_PRESETS,
   checkSetup,
@@ -154,6 +155,52 @@ export function SetupScreen({ initial, onStart, onBack }: Props) {
           ))}
         </fieldset>
 
+        <fieldset className={styles.field} data-testid="blind-structure">
+          <legend>{t.blindStructure}</legend>
+          <label className={styles.radio}>
+            <input
+              type="radio"
+              name="blind-structure"
+              checked={setup.blindLevelHands === null}
+              onChange={() => {
+                update({ blindLevelHands: null });
+              }}
+            />
+            {t.fixedBlinds}
+          </label>
+          <label className={styles.radio}>
+            <input
+              type="radio"
+              name="blind-structure"
+              checked={setup.blindLevelHands !== null}
+              onChange={() => {
+                update({ blindLevelHands: DEFAULT_LEVEL_HANDS });
+              }}
+            />
+            {t.risingBlinds}
+          </label>
+          {setup.blindLevelHands !== null && (
+            <>
+              <span className={styles.hint}>{t.risingHint}</span>
+              <div className={styles.chips} role="group" aria-label={t.levelHands}>
+                {BLIND_LEVEL_CHOICES.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`${styles.chip} ${setup.blindLevelHands === n ? styles.chipActive : ''}`}
+                    aria-pressed={setup.blindLevelHands === n}
+                    onClick={() => {
+                      update({ blindLevelHands: n });
+                    }}
+                  >
+                    {t.everyHands(n)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </fieldset>
+
         <fieldset className={styles.field}>
           <legend>{t.opponents}</legend>
           <label className={styles.radio}>
@@ -168,6 +215,26 @@ export function SetupScreen({ initial, onStart, onBack }: Props) {
             {t.randomMix}
           </label>
           <span className={styles.hint}>{t.randomMixHint}</span>
+          {setup.opponents === 'random' && (
+            <>
+              <div className={styles.chips} role="group" aria-label={t.opponentLevel}>
+                {OPPONENT_LEVELS.map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    className={`${styles.chip} ${setup.opponentLevel === level ? styles.chipActive : ''}`}
+                    aria-pressed={setup.opponentLevel === level}
+                    onClick={() => {
+                      update({ opponentLevel: level });
+                    }}
+                  >
+                    {t.opponentLevels[level]}
+                  </button>
+                ))}
+              </div>
+              <span className={styles.hint}>{t.opponentLevelHints[setup.opponentLevel]}</span>
+            </>
+          )}
           <label className={styles.radio}>
             <input
               type="radio"

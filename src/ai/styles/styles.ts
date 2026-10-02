@@ -302,29 +302,36 @@ export const STYLES: Readonly<Record<StyleId, StyleProfile>> = {
 };
 
 /** Random-mix weights that feel like a real online table (AGENTS.md §8.3). */
-const MIX_WEIGHTS: Readonly<Record<StyleId, number>> = {
-  tag: 30,
-  rec: 28,
-  lag: 14,
-  station: 13,
-  nit: 11,
-  maniac: 4,
-};
+/** Strength of the random mix (AGENTS.md §31.3.2). */
+export type OpponentLevel = 'beginner' | 'normal' | 'hard';
+export const OPPONENT_LEVELS: readonly OpponentLevel[] = ['beginner', 'normal', 'hard'];
 
-/** Styles for `count` NPCs, drawn from the mix, with at most two maniacs per table. */
-export function randomStyles(count: number, rng: Rng): StyleId[] {
+/**
+ * Mix weights per level. "normal" is the realistic online table of §8.3. "beginner" has more
+ * recreational players and calling stations; "hard" is mostly regulars and aggressive players.
+ */
+const MIX_WEIGHTS: Readonly<Record<OpponentLevel, Readonly<Record<StyleId, number>>>> = {
+  beginner: { tag: 10, rec: 36, lag: 6, station: 30, nit: 13, maniac: 5 },
+  normal: { tag: 30, rec: 28, lag: 14, station: 13, nit: 11, maniac: 4 },
+  hard: { tag: 42, rec: 8, lag: 30, station: 4, nit: 12, maniac: 4 },
+};
+const MAX_MANIACS: Readonly<Record<OpponentLevel, number>> = { beginner: 2, normal: 2, hard: 1 };
+
+/** Styles for `count` NPCs, drawn from the level's mix, with a cap on maniacs per table. */
+export function randomStyles(count: number, rng: Rng, level: OpponentLevel = 'normal'): StyleId[] {
+  const weights = MIX_WEIGHTS[level];
   const styles: StyleId[] = [];
   for (let i = 0; i < count; i++) {
     const maniacs = styles.filter((s) => s === 'maniac').length;
-    const pool = STYLE_IDS.filter((s) => s !== 'maniac' || maniacs < 2);
-    const total = pool.reduce((sum, s) => sum + MIX_WEIGHTS[s], 0);
+    const pool = STYLE_IDS.filter((s) => s !== 'maniac' || maniacs < MAX_MANIACS[level]);
+    const total = pool.reduce((sum, s) => sum + weights[s], 0);
     let pick = rng.int(total);
     for (const s of pool) {
-      if (pick < MIX_WEIGHTS[s]) {
+      if (pick < weights[s]) {
         styles.push(s);
         break;
       }
-      pick -= MIX_WEIGHTS[s];
+      pick -= weights[s];
     }
   }
   return styles;
