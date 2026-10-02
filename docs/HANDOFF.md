@@ -4,6 +4,43 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-10-02 (session 1, part 18) — Claude — Phase X2: learning aids
+
+**Owner action needed:** after this merges, open a new game on your phone. Check:
+
+- the three first-game tips;
+- the "Sua mão" pill under your cards;
+- tapping an opponent to see their profile;
+- the list icon in the header (actions of the hand).
+
+**Branch:** `feat/phase-x2-learning`. X1 (PR #20) is merged.
+
+### Done
+
+- **Made hand pill:** `app/made-hand.ts`.
+- **Opponent profile sheet:** `app/opponent-stats.ts`, saved with the game. See ADR-033.
+- **Hand log sheet.**
+- **First-game tips:** `Settings.tipsSeen`, plus a "Mostrar dicas novamente" button in "Como jogar".
+
+### Exact next step
+
+- Merge X2 when CI is green. Label the PR `update-visual-baselines`; after the bot commits the baselines, push a real commit so CI runs.
+- Then continue X3 on `feat/phase-x3-modes`. It holds a `wip:` commit with:
+  - tournament blinds: engine `setBlinds`, `app/blind-schedule.ts`, the controller and header level;
+  - the opponent level;
+  - lifetime statistics: `app/lifetime-stats.ts` and `StatsScreen`;
+  - `tests/unit/modes.test.ts`.
+
+  Still to do for X3: e2e tests, docs, then merge `main` into it.
+
+### Verification
+
+- `npm run check`.
+- `tests/unit/learning.test.ts`.
+- `tests/e2e/learning.spec.ts`.
+
+---
+
 ## 2026-10-02 (session 1, part 17) — Claude — Phase X1: game feel
 
 **Owner action needed:** after this merges, play a few hands on your phone and say whether the new pace feels right. Areas to judge: the slower deal, the flop card by card, the pause after each street, the timer bar, and the "Ver probabilidades" pill. The owner asked for the whole brainstorm to be implemented (AGENTS.md §31); X2 and X3 follow on their own branches.
