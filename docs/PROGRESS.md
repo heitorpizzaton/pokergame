@@ -166,5 +166,5 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 - [x] Tournament mode: engine `setBlinds` + `BlindsChanged`, `app/blind-schedule.ts`, controller levels, header level and raise banner, saved with the game (31.3.1, ADR-034)
 - [x] Opponent level: Iniciante / Normal / Difícil mixes, at most one maniac on Difícil (31.3.2)
 - [x] Lifetime statistics: `app/lifetime-stats.ts`, "Estatísticas" screen with reset and confirmation (31.3.3)
-- [x] Tests: `tests/unit/modes.test.ts`, `tests/e2e/modes.spec.ts`; visual baselines regenerated in CI
+- [x] Tests: `tests/unit/modes.test.ts`, `tests/e2e/modes.spec.ts`; visual baselines regenerated in CI (commit `bf195d7`)
 - [ ] **Accept:** the owner approves on their phone
