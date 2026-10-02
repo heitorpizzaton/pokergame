@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { parseCards } from '../../core/cards/index.ts';
 import { evaluate } from '../../core/eval/index.ts';
 import { handName, strings } from '../../i18n/index.ts';
@@ -22,10 +23,14 @@ const EXAMPLES = [
 export function GuideScreen({
   onBack,
   fourColor,
+  onShowTips,
 }: {
   readonly onBack: () => void;
   readonly fourColor: boolean;
+  /** Shows the first-game tips again at the next table (AGENTS.md §31.2.4). */
+  readonly onShowTips?: () => void;
 }) {
+  const [tipsQueued, setTipsQueued] = useState(false);
   const t = strings.guide;
   return (
     <main className={styles.screen} data-testid="guide-screen">
@@ -69,6 +74,20 @@ export function GuideScreen({
           </ol>
           <p className={styles.note}>{t.tieNote}</p>
         </section>
+        {onShowTips && (
+          <button
+            type="button"
+            className={styles.back}
+            data-testid="show-tips"
+            disabled={tipsQueued}
+            onClick={() => {
+              onShowTips();
+              setTipsQueued(true);
+            }}
+          >
+            {tipsQueued ? t.tipsQueued : t.showTips}
+          </button>
+        )}
         <p className={styles.legal}>{strings.legal.entertainment}</p>
       </div>
     </main>

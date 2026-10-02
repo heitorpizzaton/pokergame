@@ -25,6 +25,8 @@ export interface Settings {
   readonly haptics: boolean;
   readonly reducedMotion: boolean;
   readonly theme: ThemeSetting;
+  /** The first-game tips were seen and dismissed (AGENTS.md §31.2.4). */
+  readonly tipsSeen: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -44,6 +46,8 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   reducedMotion: false,
   theme: 'auto',
+  // The seeded end-to-end build starts at the table directly; its tips test opts in.
+  tipsSeen: import.meta.env.MODE === 'e2e',
 };
 
 const STORAGE_KEY = 'mesa-viva:settings';
@@ -78,6 +82,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): Settings
       haptics: bool('haptics'),
       reducedMotion: bool('reducedMotion'),
       theme: THEME_SETTINGS.find((t) => t === parsed.theme) ?? DEFAULT_SETTINGS.theme,
+      tipsSeen: bool('tipsSeen'),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -117,6 +122,7 @@ export class SettingsStore {
   }
 
   reset(): void {
-    this.update(DEFAULT_SETTINGS);
+    // "Restaurar padrões" keeps the tips dismissed; "Como jogar" can show them again.
+    this.update({ ...DEFAULT_SETTINGS, tipsSeen: this.#settings.tipsSeen });
   }
 }

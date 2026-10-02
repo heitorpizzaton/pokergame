@@ -1,6 +1,7 @@
 import { type CSSProperties, useState, useSyncExternalStore } from 'react';
 import { potInView } from '../../app/bet-sizing.ts';
 import type { GameController, TableSnapshot } from '../../app/game-controller.ts';
+import { madeHandLabel } from '../../app/made-hand.ts';
 import { flipDelayMs, PACING } from '../../app/pacing.ts';
 import type { Settings } from '../../app/settings.ts';
 import type { Card } from '../../core/cards/index.ts';
@@ -12,10 +13,13 @@ import { useCountUp } from '../anim/useCountUp.ts';
 import { ActionBar, PreActionBar } from '../table/ActionBar.tsx';
 import { ActionTimerBar } from '../table/ActionTimerBar.tsx';
 import { ChipStack } from '../table/ChipStack.tsx';
+import { HandLog } from '../table/HandLog.tsx';
+import { OpponentSheet } from '../table/OpponentSheet.tsx';
 import { OddsPanel } from '../table/OddsPanel.tsx';
 import { PlayingCard } from '../table/PlayingCard.tsx';
 import { RunoutEquity } from '../table/RunoutEquity.tsx';
 import { Seat } from '../table/Seat.tsx';
+import { TableTips } from '../table/TableTips.tsx';
 import {
   betPosition,
   potPosition,
@@ -63,6 +67,8 @@ export function TableScreen({
   const snap = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const orientation = useOrientation();
   const [confirmQuit, setConfirmQuit] = useState(false);
+  const [profileSeat, setProfileSeat] = useState<number | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
   useTableEffects(controller, settings);
 
   if (snap.phase === 'userOut' || snap.phase === 'gameOver') {
@@ -161,6 +167,17 @@ export function TableScreen({
             <button
               type="button"
               className={styles.iconButton}
+              aria-label={strings.table.log.open}
+              data-testid="hand-log-toggle"
+              onClick={() => {
+                setLogOpen(true);
+              }}
+            >
+              <Icon name="list" />
+            </button>
+            <button
+              type="button"
+              className={styles.iconButton}
               aria-label={settings.sound ? strings.table.mute : strings.table.unmute}
               aria-pressed={!settings.sound}
               data-testid="mute-toggle"
@@ -240,6 +257,18 @@ export function TableScreen({
               concealShown={snap.hiddenShowdown.includes(seat.seat)}
               muck={{ x: center.x - pos.x, y: center.y - pos.y }}
               countMs={countMs}
+              madeHand={
+                seat.seat === userSeat && (userInHand || seat.status === 'allIn')
+                  ? madeHandLabel(view.holeCards, shown)
+                  : null
+              }
+              {...(seat.seat !== userSeat
+                ? {
+                    onSelect: () => {
+                      setProfileSeat(seat.seat);
+                    },
+                  }
+                : {})}
               isWinner={winners.has(seat.seat)}
               lastAction={snap.lastActions[seat.seat]}
               holeCards={seat.seat === userSeat ? view.holeCards : null}
@@ -483,6 +512,42 @@ export function TableScreen({
       <div className="sr-only" role="status" aria-live="polite" data-testid="announcer">
         {announcement(snap)}
       </div>
+
+      {profileSeat !== null && snap.opponents[profileSeat] && (
+        <OpponentSheet
+          name={view.seats[profileSeat]?.name ?? ''}
+          styleBadge={
+            settings.showNpcStyles && snap.styles[profileSeat]
+              ? strings.styleBadges[snap.styles[profileSeat]]
+              : null
+          }
+          summary={snap.opponents[profileSeat]}
+          fourColor={settings.fourColorDeck}
+          onClose={() => {
+            setProfileSeat(null);
+          }}
+        />
+      )}
+
+      {logOpen && (
+        <HandLog
+          view={view}
+          board={shown}
+          userSeat={userSeat}
+          fourColor={settings.fourColorDeck}
+          onClose={() => {
+            setLogOpen(false);
+          }}
+        />
+      )}
+
+      {!settings.tipsSeen && (
+        <TableTips
+          onDone={() => {
+            onSettingsChange({ tipsSeen: true });
+          }}
+        />
+      )}
 
       {snap.paused && (
         <div

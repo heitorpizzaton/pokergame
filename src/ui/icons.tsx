@@ -4,6 +4,7 @@ const PATHS = {
   soundOn: 'M4 9v6h4l5 4V5L8 9H4Zm12.5 -.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
   soundOff: 'M4 9v6h4l5 4V5L8 9H4Zm12 .5 5 5m0-5-5 5',
   lock: 'M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+  list: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
 } as const;
 
 export function Icon({

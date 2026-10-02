@@ -16,6 +16,11 @@ import { CryptoRng, type Rng } from '../core/rng/index.ts';
 import type { ActionRecord, PlayerAction, PlayerView } from '../core/view/index.ts';
 import type { NpcDriver } from './npc-driver.ts';
 import { dealDurationMs, PACING, type Speed, streetRevealMs } from './pacing.ts';
+import {
+  type OpponentRecord,
+  OpponentStatsTracker,
+  type OpponentSummary,
+} from './opponent-stats.ts';
 import { type SavedStats, type SessionStats, SessionStatsTracker } from './session-stats.ts';
 
 export type { Speed };
@@ -122,6 +127,8 @@ export interface TableSnapshot {
    * time (AGENTS.md §31.1.5); empty otherwise.
    */
   readonly hiddenShowdown: readonly number[];
+  /** What the table has seen of each opponent in this game (AGENTS.md §31.2.2), by seat. */
+  readonly opponents: Readonly<Record<number, OpponentSummary>>;
 }
 
 /** Revealed after the hand so the commitment can be checked (AGENTS.md §14, Phase 8). */
@@ -152,6 +159,8 @@ export interface SavedGame {
   readonly timeBankMs: number;
   readonly userHands: number;
   readonly startedAt: number;
+  /** Public statistics of each opponent (absent in saves from before Phase X2). */
+  readonly opponents?: Readonly<Record<number, OpponentRecord>>;
 }
 
 export interface TimerSettings {
@@ -223,6 +232,7 @@ export class GameController {
   readonly #scheduler: Scheduler;
   readonly #userSeat: number;
   readonly #stats: SessionStatsTracker;
+  readonly #opponents: OpponentStatsTracker;
   readonly #listeners = new Set<() => void>();
   readonly #effectListeners = new Set<(effect: TableEffect) => void>();
   readonly #options: ControllerOptions;
@@ -281,6 +291,7 @@ export class GameController {
     this.#userSeat = saved?.userSeat ?? options.userSeat ?? 0;
     this.#startedAt = saved?.startedAt ?? this.#scheduler.now();
     this.#stats = new SessionStatsTracker(this.#userSeat, this.#startedAt, saved?.stats);
+    this.#opponents = new OpponentStatsTracker(saved?.opponents);
     this.#timerSettings = options.timer ?? { actionMs: null, bankMs: 30_000 };
     this.#timeBankMs = saved?.timeBankMs ?? this.#timerSettings.bankMs;
     this.#userHands = saved?.userHands ?? 0;
@@ -792,6 +803,7 @@ export class GameController {
     }
     this.#rabbit = this.#rabbitEnabled && this.#engine.rabbitHunt() ? 'available' : null;
     const view = this.#engine.viewFor(this.#userSeat);
+    this.#opponents.observe(view);
     this.#options.onHandComplete?.({
       handNumber: hand.number,
       startedAt: this.#handStartedAt,
@@ -884,6 +896,7 @@ export class GameController {
       timeBankMs: this.#timeBankMs,
       userHands: this.#userHands,
       startedAt: this.#startedAt,
+      opponents: this.#opponents.save(),
     };
   }
 
@@ -943,6 +956,11 @@ export class GameController {
       collected: this.#collected,
       commitment: this.#commitment?.hash ?? null,
       hiddenShowdown: [...this.#hiddenShowdown],
+      opponents: Object.fromEntries(
+        state.seats.flatMap((_, seat) =>
+          seat === this.#userSeat ? [] : [[seat, this.#opponents.summary(seat)]],
+        ),
+      ),
     };
   }
 

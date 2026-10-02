@@ -154,10 +154,12 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 
 ## Phase X2 — Learning aids (AGENTS.md §31.2)
 
-- [ ] Made hand always visible
-- [ ] Opponent profile sheet
-- [ ] Hand log
-- [ ] First-game tips
+- [x] Made hand always visible next to the user's cards (`app/made-hand.ts`) (31.2.1)
+- [x] Opponent profile sheet from public information only (`app/opponent-stats.ts`, saved with the game) (31.2.2, ADR-033)
+- [x] Hand log sheet from the header (31.2.3)
+- [x] First-game tips, persisted as `tipsSeen`; "Como jogar" can show them again (31.2.4)
+- [x] Tests: `tests/unit/learning.test.ts`, `tests/e2e/learning.spec.ts`; visual baselines regenerated in CI (commit `adb477c`)
+- [ ] **Accept:** the owner approves on their phone
 
 ## Phase X3 — Game modes (AGENTS.md §31.3)
 

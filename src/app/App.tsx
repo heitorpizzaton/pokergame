@@ -196,13 +196,15 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
     controller.setAutoMuck(settings.autoMuck);
   }, [controller, settings]);
 
+  // The first game waits for the tips to be dismissed (AGENTS.md §31.2.4).
+  const tipsPending = !settings.tipsSeen;
   useEffect(() => {
-    if (!controller) return;
+    if (!controller || tipsPending) return;
     controller.start();
     return () => {
       controller.suspend();
     };
-  }, [controller]);
+  }, [controller, tipsPending]);
 
   const startGame = (setup: GameSetup) => {
     saveLastSetup(storage(), setup);
@@ -267,7 +269,13 @@ export function App({ rngs }: { readonly rngs: RngFactory }) {
     case 'guide':
       return (
         <Suspense fallback={null}>
-          <GuideScreen onBack={toMenu} fourColor={settings.fourColorDeck} />
+          <GuideScreen
+            onBack={toMenu}
+            fourColor={settings.fourColorDeck}
+            onShowTips={() => {
+              settingsStore.update({ tipsSeen: false });
+            }}
+          />
         </Suspense>
       );
     case 'table':
