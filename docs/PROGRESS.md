@@ -149,7 +149,7 @@ The realistic 3D table was discarded after the owner tested the Phase V2 preview
 - [x] NPC thinking dots (31.1.7)
 - [x] Sliding dealer button (31.1.8)
 - [x] pt-BR plurals "Três" and "Dez" (31.1.9)
-- [x] Tests: `tests/unit/pacing.test.ts`, `tests/e2e/game-feel.spec.ts`, odds tests updated to the hidden pill
+- [x] Tests: `tests/unit/pacing.test.ts`, `tests/e2e/game-feel.spec.ts`, odds tests updated to the hidden pill; visual baselines regenerated (commit `37112d0`)
 - [ ] **Accept:** the owner approves the feel on their phone
 
 ## Phase X2 — Learning aids (AGENTS.md §31.2)
