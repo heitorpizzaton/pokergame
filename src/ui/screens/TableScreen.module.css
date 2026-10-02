@@ -37,8 +37,12 @@
 }
 
 .level {
+  flex-basis: 100%;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .levelRaised {

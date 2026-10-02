@@ -39,7 +39,15 @@ A 20,000-hand calibration run (seed 3) measured:
 | Maniac     | 61.4% | 48.9% | −77.3  |
 | Recreativo | 36.9% | 7.7%  | −6.9   |
 
-**Random mix weights:** TAG 30, recreativo 28, LAG 14, station 13, nit 11, maniac 4, with at most two maniacs per table.
+**Random mix weights** by opponent level (AGENTS.md §31.3.2, `styles/styles.ts`):
+
+| Level            | TAG | Recreativo | LAG | Station | Nit | Maniac | Max maniacs |
+| ---------------- | --- | ---------- | --- | ------- | --- | ------ | ----------- |
+| Iniciante        | 10  | 36         | 6   | 30      | 13  | 5      | 2           |
+| Normal (default) | 30  | 28         | 14  | 13      | 11  | 4      | 2           |
+| Difícil          | 42  | 8          | 30  | 4       | 12  | 4      | 1           |
+
+"Normal" is the realistic online mix of §8.3 and draws exactly as before. The style profiles themselves do not change with the level; only the mix does.
 
 ## Bluffing (AGENTS.md Section 18)
 

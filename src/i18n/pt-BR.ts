@@ -179,7 +179,7 @@ export const ptBR = {
     blindsLabel: (sb: number, bb: number) => `Blinds ${formatChips(sb)}/${formatChips(bb)}`,
     level: {
       label: (level: number) => `Nível ${level}`,
-      next: (hands: number) => (hands === 1 ? 'última mão do nível' : `sobe em ${hands} mãos`),
+      next: (hands: number) => (hands === 1 ? 'última mão' : `sobe em ${hands} mãos`),
       raised: (sb: number, bb: number) =>
         `Os blinds subiram para ${formatChips(sb)}/${formatChips(bb)}`,
     },
