@@ -15,13 +15,18 @@ import { commitDeck, newSalt } from '../core/fairness/index.ts';
 import { CryptoRng, type Rng } from '../core/rng/index.ts';
 import type { ActionRecord, PlayerAction, PlayerView } from '../core/view/index.ts';
 import type { NpcDriver } from './npc-driver.ts';
+import { dealDurationMs, PACING, type Speed, streetRevealMs } from './pacing.ts';
 import { type SavedStats, type SessionStats, SessionStatsTracker } from './session-stats.ts';
 
-export type Speed = 'normal' | 'fast' | 'instant';
+export type { Speed };
 export type PreAction = 'checkFold' | 'callAny' | 'check';
 
 export type TablePhase =
   | 'dealing'
+  /** A new street is being revealed (burn, flips and a short breath, AGENTS.md §31.1.3). */
+  | 'street'
+  /** Hands turn face up one at a time before the result (AGENTS.md §31.1.5). */
+  | 'showdown'
   | 'npcTurn'
   | 'userTurn'
   | 'runout'
@@ -112,6 +117,11 @@ export interface TableSnapshot {
   readonly collected: CollectedBets | null;
   /** SHA-256 commitment to this hand's deck, published before the hand is shown (Phase 8). */
   readonly commitment: string | null;
+  /**
+   * Seats whose showdown cards are still face down while the showdown is revealed one hand at a
+   * time (AGENTS.md §31.1.5); empty otherwise.
+   */
+  readonly hiddenShowdown: readonly number[];
 }
 
 /** Revealed after the hand so the commitment can be checked (AGENTS.md §14, Phase 8). */
@@ -192,17 +202,6 @@ export interface ControllerOptions {
   readonly onHandComplete?: (hand: CompletedHand) => void;
 }
 
-const THINKING_MS: Record<Speed, readonly [number, number]> = {
-  normal: [350, 1200],
-  fast: [120, 400],
-  instant: [0, 0],
-};
-const RUNOUT_STREET_MS: Record<Speed, number> = { normal: 1100, fast: 500, instant: 0 };
-const RESULT_MS: Record<Speed, number> = { normal: 2600, fast: 1400, instant: 0 };
-const AWAY_ACTION_MS: Record<Speed, number> = { normal: 500, fast: 250, instant: 0 };
-/** Time for the deal animation: per hole card, plus the last card's flight (AGENTS.md §11.4). */
-const DEAL_CARD_MS: Record<Speed, number> = { normal: 70, fast: 35, instant: 0 };
-const DEAL_FLIGHT_MS: Record<Speed, number> = { normal: 300, fast: 180, instant: 0 };
 /** AGENTS.md §8.4: NPC thinking time is never above 1.5 s. */
 const MAX_THINKING_MS = 1500;
 /** AGENTS.md §9: +5 s every 10 hands, up to 60 s. */
@@ -256,6 +255,9 @@ export class GameController {
   #commitment: { hash: string; salt: string; deck: readonly Card[] } | null = null;
   readonly #fairnessRng: Rng;
   #collectId = 0;
+  /** Seats revealed before the showdown (all-in) and the showdown order still to reveal. */
+  #revealedEarly = new Set<number>();
+  #hiddenShowdown: number[] = [];
   #announcedTurn: string | null = null;
   #gameOverNotified = false;
   #snapshot: TableSnapshot;
@@ -390,9 +392,16 @@ export class GameController {
 
   /** Skips the deal animation, a runout or the wait after a hand ("toque para continuar"). */
   skipWait(): void {
-    if (this.#phase === 'dealing') {
+    if (this.#phase === 'dealing' || this.#phase === 'street') {
       this.#clearTimer();
+      this.#boardShown = this.#engine.state.hand?.board.length ?? this.#boardShown;
       this.#continue();
+      return;
+    }
+    if (this.#phase === 'showdown') {
+      this.#clearTimer();
+      this.#hiddenShowdown = [];
+      this.#showResult();
       return;
     }
     if (this.#phase !== 'handResult' && this.#phase !== 'runout') return;
@@ -461,6 +470,8 @@ export class GameController {
     this.#handLog = [];
     this.#dealOrder = [];
     this.#collected = null;
+    this.#revealedEarly = new Set();
+    this.#hiddenShowdown = [];
     this.#handStartedAt = this.#scheduler.now();
     this.#absorb(this.#engine.dispatch({ type: 'startHand' }), 0, null);
     const hand = this.#engine.state.hand;
@@ -476,7 +487,7 @@ export class GameController {
       }
     }
     // Let the deal animation finish before anyone acts.
-    const dealMs = DEAL_CARD_MS[this.#speed] * this.#dealOrder.length + DEAL_FLIGHT_MS[this.#speed];
+    const dealMs = dealDurationMs(PACING[this.#speed], this.#dealOrder.length);
     if (dealMs === 0 || this.#engine.state.hand?.phase === 'complete') {
       this.#continue();
       return;
@@ -508,7 +519,7 @@ export class GameController {
           this.#emit({ kind: 'flip', cards: this.#boardShown - before });
           if (this.#boardShown < hand.board.length) this.#continue();
           else this.#showResult();
-        }, RUNOUT_STREET_MS[this.#speed]);
+        }, this.#runoutStepMs());
         this.#publish();
         return;
       }
@@ -517,7 +528,20 @@ export class GameController {
       return;
     }
 
+    // A new street: show the burn and the cards turning, then breathe before the next action.
+    const newCards = hand.board.length - this.#boardShown;
     this.#boardShown = hand.board.length;
+    const pacing = PACING[this.#speed];
+    const revealMs = newCards > 0 ? streetRevealMs(pacing, newCards) + pacing.streetPauseMs : 0;
+    if (revealMs > 0 && this.#phase !== 'street') {
+      this.#phase = 'street';
+      this.#publish();
+      this.#timer = this.#scheduler.setTimeout(() => {
+        this.#timer = null;
+        this.#continue();
+      }, revealMs);
+      return;
+    }
     const seat = hand.toAct;
     if (seat === null) return;
     if (seat === this.#userSeat) {
@@ -549,7 +573,7 @@ export class GameController {
       this.#timer = this.#scheduler.setTimeout(() => {
         this.#timer = null;
         this.#timeOut(false);
-      }, AWAY_ACTION_MS[this.#speed]);
+      }, PACING[this.#speed].awayActionMs);
       return;
     }
     const actionMs = this.#timerSettings.actionMs;
@@ -645,9 +669,22 @@ export class GameController {
   }
 
   #showResult(): void {
+    // Reveal the showdown one hand at a time first (AGENTS.md §31.1.5).
+    const step = PACING[this.#speed].showdownStepMs;
+    if (this.#hiddenShowdown.length > 0 && step > 0 && !this.#watching) {
+      this.#phase = 'showdown';
+      this.#publish();
+      this.#timer = this.#scheduler.setTimeout(() => {
+        this.#timer = null;
+        this.#hiddenShowdown = this.#hiddenShowdown.slice(1);
+        this.#showResult();
+      }, step);
+      return;
+    }
+    this.#hiddenShowdown = [];
     this.#phase = this.#watching ? 'watching' : 'handResult';
     this.#publish();
-    const delay = RESULT_MS[this.#speed];
+    const delay = PACING[this.#speed].resultMs;
     this.#timer = this.#scheduler.setTimeout(() => {
       this.#timer = null;
       this.#afterResult();
@@ -715,6 +752,9 @@ export class GameController {
     const hand = this.#engine.state.hand;
     if (!hand) return;
     if (hand.street !== streetBefore) this.#lastActions = {};
+    for (const e of events) {
+      if (e.type === 'HandsRevealed') for (const h of e.hands) this.#revealedEarly.add(h.seat);
+    }
     if (events.some((e) => e.type === 'HandsRevealed')) {
       // All-in: reveal the remaining streets one at a time.
       this.#phase = 'runout';
@@ -722,6 +762,14 @@ export class GameController {
     }
     if (hand.phase === 'complete') {
       this.#result = resultFrom(events);
+      // Hands still face down turn over one at a time, in showdown order (§5.6, §31.1.5).
+      this.#hiddenShowdown = events.flatMap((e) =>
+        e.type === 'Showdown' && e.seat !== this.#userSeat && !this.#revealedEarly.has(e.seat)
+          ? [e.seat]
+          : [],
+      );
+      // The first hand is face up at once; the others follow.
+      this.#hiddenShowdown = this.#hiddenShowdown.slice(1);
       this.#afterHandComplete();
     }
   }
@@ -843,8 +891,15 @@ export class GameController {
     return this.#boardShown < 3 ? 3 : this.#boardShown + 1;
   }
 
+  /** Between runout streets: the next street's reveal plus a dramatic pause. */
+  #runoutStepMs(): number {
+    const pacing = PACING[this.#speed];
+    const next = this.#boardShown < 3 ? 3 : 1;
+    return streetRevealMs(pacing, next) + pacing.runoutPauseMs;
+  }
+
   #thinkingMs(view: PlayerView): number {
-    const [min, max] = THINKING_MS[this.#speed];
+    const [min, max] = PACING[this.#speed].thinkingMs;
     if (max === 0) return 0;
     const streetWeight = { preflop: 0.1, flop: 0.35, turn: 0.55, river: 0.75 }[
       view.street ?? 'preflop'
@@ -887,6 +942,7 @@ export class GameController {
       dealOrder: [...this.#dealOrder],
       collected: this.#collected,
       commitment: this.#commitment?.hash ?? null,
+      hiddenShowdown: [...this.#hiddenShowdown],
     };
   }
 

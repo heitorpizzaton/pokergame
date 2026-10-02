@@ -24,7 +24,8 @@ const t = strings.odds;
 
 /**
  * Odds panel (AGENTS.md §7.3). Uses only the user's cards and the visible board. Mounted only
- * when the setting is on, so nothing is computed when it is off.
+ * when the setting is on, so nothing is computed when it is off. Minimized, it is a pill that
+ * hides the number until tapped (AGENTS.md §31.1.2), and computes nothing either.
  */
 export function OddsPanel({
   view,
@@ -44,7 +45,7 @@ export function OddsPanel({
   const equity = computed?.key === requestKey ? computed.result : null;
 
   useEffect(() => {
-    if (hole?.length !== 2 || opponents === 0) return;
+    if (!expanded || hole?.length !== 2 || opponents === 0) return;
     let cancelled = false;
     const update = (result: EquityResult | null) => {
       if (!cancelled && result) setComputed({ key: requestKey, result });
@@ -55,7 +56,7 @@ export function OddsPanel({
     };
     // The request depends only on the key (cards and number of opponents).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestKey, client]);
+  }, [requestKey, client, expanded]);
 
   if (hole?.length !== 2) return null;
   const preflop = board.length === 0 ? preflopClass(hole) : null;
@@ -77,9 +78,7 @@ export function OddsPanel({
           onExpandedChange(true);
         }}
       >
-        <strong className={styles.equity} data-testid="odds-equity">
-          {equity ? t.pill(formatPercent(equity.equity)) : t.computing}
-        </strong>
+        <strong className={styles.equity}>{t.reveal}</strong>
         <span className={styles.chevron} aria-hidden="true">
           ▴
         </span>

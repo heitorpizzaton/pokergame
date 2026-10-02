@@ -54,6 +54,7 @@ test('the odds panel shows equity and can be toggled off and on', async ({ page 
   await startGame(page, '?speed=instant');
   const panel = page.getByTestId('odds-panel');
   await expect(panel).toBeVisible({ timeout: 20_000 });
+  await panel.click();
   await expect(page.getByTestId('odds-equity')).toHaveText(/%$/, { timeout: 20_000 });
   await page.getByTestId('odds-toggle').click();
   await expect(panel).toBeHidden();

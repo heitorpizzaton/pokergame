@@ -818,3 +818,39 @@ Chosen by the owner after the 3D table was withdrawn (Section 17.4). **This sect
 ### 30.4 Phase W1 — Web-app redesign
 Semantic tokens with light and dark themes; the "Tema" setting; every screen (menu, setup, table, summary, history and replayer, settings, guide, fairness panel) restyled per 30.1; visual regression baselines regenerated for both themes.
 *Accept:* `npm run check` green; axe checks pass in both themes; no casino styling left (no gold tokens, `backdrop-filter`, noise or felt textures in the code); visual baselines regenerated in CI; **the owner approves the deployed preview on their phone**.
+
+---
+
+## 31. Game feel, learning aids and game modes (owner decision, 2026-10-02)
+
+After playing the game, the owner approved this list of improvements (the agent's brainstorm, everything it recommended). Where this section changes an earlier rule, **this section wins**; the changed rules are listed in 31.5. Fairness, the information boundary and integer chips still apply: no new feature may reveal hidden cards or change outcomes.
+
+### 31.1 Phase X1 — Game feel
+1. **Visible action timer.** While it is the user's turn and the action timer is on, a progress bar sits on top of the action bar with the seconds left ("14 s"). It turns to a warning color in the last 5 s; when the normal timer ends and the time bank runs, the bar shows "Banco de tempo" with its own seconds. The ring around the avatar stays. "Como jogar" explains what happens on timeout (Part I §9).
+2. **Equity hidden by default.** The minimized odds panel (§19) shows "Ver probabilidades" without any number until the user taps it; then it expands as before. The odds-panel switch still turns everything off. The expanded/minimized memory of §19 is kept.
+3. **Slower, readable dealing.** Hole cards fly one at a time (about 150 ms apart, ~360 ms flight). Before each street the burn card is visible; the flop turns one card at a time (~250 ms apart, ~450 ms flip); the turn and river turn after a short pause. After a street is dealt there is a ~600 ms pause before the next player acts. "Rápido" keeps short versions; "instant" (tests) has none; every animation stays skippable and respects reduced motion.
+4. **Fold animation.** A folding player's cards slide face down toward the centre and fade out instead of disappearing.
+5. **Sequential showdown.** At showdown, hands are revealed one at a time in the showdown order of Part I §5.6 (~400 ms apart) before the result is shown.
+6. **Chips with weight.** Bets gathering into the pot get a visible beat at the end of a street; the pot total and a winner's stack count up to their new value.
+7. **NPC thinking indicator.** While an NPC decides, its seat shows a subtle animated "…". It depends only on whose turn it is (no hand-strength information).
+8. **Dealer button moves.** Between hands the dealer button slides to its new seat.
+9. **Hand names.** Use natural pt-BR plurals: "Três" and "Dez" are invariable ("Dois Pares, Reis e Três", "Par de Dez").
+
+### 31.2 Phase X2 — Learning aids
+1. **Made hand always visible.** The user's current made hand (e.g. "Par de Damas") is shown next to their hole cards whenever they are in a hand, even with the odds panel minimized or off. It uses only the user's cards and the board.
+2. **Opponent profile.** Tapping an opponent's seat opens a small sheet with the statistics observed in this game: hands seen, VPIP, PFR, aggression, went-to-showdown, and the hands they showed. Only public information is used. The style badge stays governed by "Mostrar estilo dos NPCs".
+3. **Hand log.** A collapsible list of the actions of the current hand (who did what, with amounts and streets), reachable from the table.
+4. **First-game tips.** The first time the user sits at a table, three short dismissible tips explain the action bar, the timer and the probabilities pill. Never shown again once dismissed (persisted); "Como jogar" can show them again.
+
+### 31.3 Phase X3 — Game modes
+1. **Tournament mode (rising blinds).** Setup offers "Blinds: fixos / sobem a cada N mãos" (N = 10 by default; choices 5, 10, 15, 20). When rising, blinds follow a fixed schedule (×1.5 per level, rounded to "nice" values, SB = BB/2 when possible) and change only at hand boundaries. The header shows the level and the hands until the next level. The engine owns the rule: it receives the new blinds between hands and validates them. Autosave and history record the blinds of each hand.
+2. **Opponent level.** Setup offers "Nível dos oponentes": Iniciante (more recreational players and calling stations), Normal (the current realistic mix), Difícil (mostly regulars and aggressive players, at most one maniac). Choosing styles per seat still works and overrides the level.
+3. **Lifetime statistics.** A "Estatísticas" screen (from the menu) keeps local totals across games: games played, wins, average and best finishing position, hands played and won, biggest pot, best hand, and VPIP/PFR over all hands. Stored in `localStorage`, with a reset button and confirmation. No network, no accounts.
+
+### 31.4 Not doing (owner agreed)
+The 3D table (§17.4), online rankings or anything that needs a server, and anything related to money.
+
+### 31.5 Earlier rules changed by this section
+- **§5.1** (blinds fixed for the whole game): blinds may rise in tournament mode (31.3.1); fixed remains the default.
+- **§19** (minimized pill shows the equity): the minimized pill hides the number until tapped (31.1.2).
+- **§11.4 / §8.4** (animation timing): dealing and street pacing per 31.1.3. The NPC thinking delay budget of §8.4 is unchanged.

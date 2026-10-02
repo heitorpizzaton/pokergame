@@ -12,8 +12,11 @@ interface Props {
   readonly highlighted?: boolean;
   /** Four-colour deck: clubs green, diamonds blue (AGENTS.md §11.1). */
   readonly fourColor?: boolean;
-  /** Entrance animation: dealt from the dealer, or flipped face up on the board. */
-  readonly enter?: 'deal' | 'flip' | null;
+  /**
+   * Animation: dealt from the dealer, flipped face up, or slid face down to the muck when folded
+   * (AGENTS.md §31.1.4; `--to-x`/`--to-y` give the muck's offset).
+   */
+  readonly enter?: 'deal' | 'flip' | 'muck' | null;
   /** Extra CSS variables for the animation (delay, flight offsets). */
   readonly motion?: CSSProperties | undefined;
 }

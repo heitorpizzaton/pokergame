@@ -4,6 +4,7 @@ import type { UserClock } from '../../app/game-controller.ts';
 import type { Card } from '../../core/cards/index.ts';
 import type { ActionRecord, PublicSeat } from '../../core/view/index.ts';
 import { formatBigBlinds, formatChips, strings } from '../../i18n/index.ts';
+import { useCountUp } from '../anim/useCountUp.ts';
 import { PlayingCard } from './PlayingCard.tsx';
 import styles from './Seat.module.css';
 import { UserTimer } from './UserTimer.tsx';
@@ -40,6 +41,14 @@ interface Props {
   readonly handNumber?: number;
   /** Cards to highlight (the winning five). */
   readonly highlight?: ReadonlySet<Card>;
+  /** An NPC is deciding: show the "thinking" dots (AGENTS.md §31.1.7). */
+  readonly thinking?: boolean;
+  /** Showdown cards still face down while the showdown is revealed hand by hand (§31.1.5). */
+  readonly concealShown?: boolean;
+  /** Offset from this seat to the muck (container units), for the fold animation. */
+  readonly muck?: { readonly x: number; readonly y: number };
+  /** Stack changes count up over this many milliseconds (0: immediately). */
+  readonly countMs?: number;
 }
 
 function actionLabel(action: ActionRecord): string {
@@ -71,6 +80,7 @@ export function Seat(props: Props) {
   const chips = (amount: number) =>
     props.bigBlind ? formatBigBlinds(amount, props.bigBlind) : formatChips(amount);
   const name = isUser ? strings.table.you : seat.name;
+  const stack = useCountUp(seat.stack, props.countMs ?? 0);
   const out = seat.status === 'eliminated';
   const status =
     seat.status === 'folded'
@@ -80,15 +90,32 @@ export function Seat(props: Props) {
         : out
           ? strings.table.status.eliminated
           : null;
+  // A player who just folded: their cards slide face down to the muck, then disappear.
+  const mucking = seat.status === 'folded' && lastAction?.kind === 'fold';
+  const shown = seat.shownCards && !props.concealShown ? seat.shownCards : null;
   const cards: (Card | null)[] | null = isUser
-    ? holeCards && seat.status !== 'folded'
+    ? holeCards && (seat.status !== 'folded' || mucking)
       ? [...holeCards]
       : null
-    : seat.shownCards
-      ? [...seat.shownCards]
-      : seat.hasCards
+    : shown
+      ? [...shown]
+      : seat.hasCards || mucking || props.concealShown
         ? [null, null]
         : null;
+  const cardMotion = (i: number): CSSProperties | undefined => {
+    if (mucking) {
+      return {
+        '--to-x': `${props.muck?.x ?? 0}cqw`,
+        '--to-y': `${props.muck?.y ?? 0}cqh`,
+      } as CSSProperties;
+    }
+    if (!props.deal || shown) return undefined;
+    return {
+      '--delay': `${props.deal.delays[i] ?? 0}ms`,
+      '--from-x': `${props.deal.fromX}cqw`,
+      '--from-y': `${props.deal.fromY}cqh`,
+    } as CSSProperties;
+  };
   const classes = [
     styles.seat,
     isUser ? styles.user : '',
@@ -108,21 +135,14 @@ export function Seat(props: Props) {
         <div className={styles.cards} role="group" aria-label={strings.table.holeCards(name)}>
           {cards.map((card, i) => (
             <PlayingCard
-              key={`${props.handNumber ?? 0}-${i}`}
+              // NPC cards turning face up at showdown get a new key, so they flip once.
+              key={`${props.handNumber ?? 0}-${i}-${!isUser && card !== null ? card : 'back'}`}
               card={card}
               size={isUser ? 'large' : 'small'}
               fourColor={props.fourColor ?? false}
               highlighted={card !== null && (props.highlight?.has(card) ?? false)}
-              enter={props.deal ? 'deal' : null}
-              motion={
-                props.deal
-                  ? ({
-                      '--delay': `${props.deal.delays[i] ?? 0}ms`,
-                      '--from-x': `${props.deal.fromX}cqw`,
-                      '--from-y': `${props.deal.fromY}cqh`,
-                    } as CSSProperties)
-                  : undefined
-              }
+              enter={mucking ? 'muck' : shown ? 'flip' : props.deal ? 'deal' : null}
+              motion={cardMotion(i)}
             />
           ))}
         </div>
@@ -138,7 +158,7 @@ export function Seat(props: Props) {
         <span className={styles.info}>
           <span className={styles.name}>{name}</span>
           <span className={styles.stack} data-testid={isUser ? 'user-stack' : undefined}>
-            {chips(seat.stack)}
+            {chips(stack)}
           </span>
         </span>
         {props.clock && (
@@ -156,6 +176,13 @@ export function Seat(props: Props) {
           </span>
         )}
       </div>
+      {props.thinking && (
+        <span className={styles.thinking} role="status" aria-label={strings.table.thinking(name)}>
+          <span />
+          <span />
+          <span />
+        </span>
+      )}
       {props.style && <span className={styles.badge}>{strings.styleBadges[props.style]}</span>}
       {props.away && <span className={styles.status}>{strings.table.status.away}</span>}
       {status && <span className={styles.status}>{status}</span>}

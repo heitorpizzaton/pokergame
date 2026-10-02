@@ -4,6 +4,37 @@ Newest entry on top. Each entry: agent, date, what was done, what is half-done, 
 
 ---
 
+## 2026-10-02 (session 1, part 17) — Claude — Phase X1: game feel
+
+**Owner action needed:** after this merges, play a few hands on your phone and say whether the new pace feels right. Areas to judge: the slower deal, the flop card by card, the pause after each street, the timer bar, and the "Ver probabilidades" pill. The owner asked for the whole brainstorm to be implemented (AGENTS.md §31); X2 and X3 follow on their own branches.
+
+**Branch:** `feat/phase-x1-game-feel` (PR #20).
+
+### Done
+
+- AGENTS.md §31 (X1–X3, owner-approved).
+- **Pacing (ADR-032):**
+  - `app/pacing.ts` is shared by the controller and the table.
+  - New `street` and `showdown` controller phases.
+  - The visible timer bar.
+  - Hidden equity, with no computation while the panel is minimized.
+- **Animations:** fold to the muck, showdown flips, NPC thinking dots, sliding dealer button, chip count-up.
+- **Hand names:** "Três" and "Dez" plurals.
+
+### Exact next step
+
+- Merge X1 when CI is green.
+- Then merge `main` into `feat/phase-x2-learning`, finish its docs and open its PR.
+- Then X3 (tournament blinds, opponent level, lifetime stats).
+
+### Verification
+
+- `npm run check` (327 unit tests, 175 e2e).
+- `tests/unit/pacing.test.ts`.
+- `tests/e2e/game-feel.spec.ts`.
+
+---
+
 ## 2026-10-01 (session 1, part 16) — Claude — Phase W1: clean web-app redesign
 
 **Owner action needed:**

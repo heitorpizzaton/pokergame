@@ -1,0 +1,53 @@
+.timer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) calc(var(--space-3) + var(--safe-right)) 0
+    calc(var(--space-3) + var(--safe-left));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-sunken);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--color-accent);
+  /* Timers keep real time: not scaled by the speed setting or reduced motion. */
+  transition: width 200ms linear;
+}
+
+.seconds {
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--color-text);
+}
+
+.bank .fill {
+  background: var(--color-warning);
+}
+
+.warning .fill {
+  background: var(--color-timer-warning);
+}
+
+.warning .seconds {
+  color: var(--color-timer-warning);
+}

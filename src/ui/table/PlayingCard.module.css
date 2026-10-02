@@ -162,3 +162,20 @@
     transform: none;
   }
 }
+
+/* Folded cards slide toward the centre of the table and fade out (AGENTS.md §31.1.4). */
+.muck {
+  animation: muck calc(520ms * var(--anim-scale)) var(--ease-out) both;
+}
+
+@keyframes muck {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(var(--to-x, 0), var(--to-y, 0)) rotate(25deg) scale(0.7);
+  }
+}

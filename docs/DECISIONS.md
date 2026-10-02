@@ -4,6 +4,35 @@ Every non-obvious technical choice, newest on top. Format: context, decision, al
 
 ---
 
+## ADR-032 — Game feel: one pacing table, street and showdown phases, hidden equity (Phase X1)
+
+- **Date:** 2026-10-02
+- **Context:** the owner played the game and found it too fast and dry. The deal took under 1 s, the flop appeared at once, and the next player acted 0.1 s after a street. The timer was nearly invisible. The owner also wanted the equity hidden by default. AGENTS.md §31.1 lists the approved changes.
+- **Decision:**
+  - **One pacing table.** `app/pacing.ts` holds every table timing per speed: deal stagger and flight, burn, flop stagger, flip, street pause, runout pause, showdown step, result, NPC thinking and the away action.
+    - The controller waits for these times, and the table schedules its CSS animations with the same numbers, so the two cannot drift apart.
+    - `instant` has no pauses, which keeps tests and "assistir até o fim" fast.
+  - **Two new controller phases.**
+    - `street`: a new street shows the burn and the cards turning one at a time, then breathes (600 ms) before the next player acts.
+    - `showdown`: the hands still face down turn over one at a time, in the engine's showdown order (§5.6), 450 ms apart.
+    - Hands revealed for an all-in stay revealed at once (§5.4).
+    - Both phases can be skipped with a tap. The NPC thinking budget (§8.4) is unchanged.
+  - **Hidden equity.** The minimized odds pill says "Ver probabilidades" and computes nothing. Opening it computes as before. This is stricter than §19, which computed for the pill.
+  - **Visible timer.** `ActionTimerBar` sits above the action bar, with the seconds and a separate "Banco de tempo" state; it turns to the warning color in the last 5 s. The ring stays. `clock-state.ts` holds the arithmetic and is unit-tested.
+  - **Animations, all driven by state:**
+    - folded cards slide face down toward the centre;
+    - a showdown card gets a new key when it turns face up, so it flips once;
+    - three "thinking" dots appear on the NPC whose turn it is;
+    - the dealer button is its own element and slides between hands;
+    - the pot and the stacks count up (`useCountUp`, integers only).
+  - **Hand names:** "Três" and "Dez" are invariable in the plural.
+- **Alternatives considered:**
+  - **Scaling CSS durations only:** rejected. The controller would not know how long to wait.
+  - **A timer inside the action bar component:** rejected. The pre-action bar and the away state need the same clock, so it lives in its own component above.
+- **Consequences:**
+  - A hand at normal speed now takes noticeably longer: the deal of 6 players takes 2 s, and a flop about 1.9 s before the next action.
+  - "Rápido" keeps short versions. The visual baselines change (dealer button position, timer bar).
+
 ## ADR-031 — Clean web-app visual direction with light and dark themes (Phase W1)
 
 - **Date:** 2026-10-01
