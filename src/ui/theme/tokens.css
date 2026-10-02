@@ -84,8 +84,8 @@
   /* Motion (scaled by --anim-scale: speed setting; 0 with reduced motion) */
   --anim-scale: 1;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --duration-deal: 260ms;
-  --duration-flip: 300ms;
+  --duration-deal: 360ms;
+  --duration-flip: 450ms;
   --duration-chip: 360ms;
   --duration-fade: 160ms;
 

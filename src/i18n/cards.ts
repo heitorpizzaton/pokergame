@@ -19,14 +19,14 @@ export const RANK_NAMES = [
 
 export const RANK_PLURALS = [
   'Dois',
-  'Treses',
+  'Três',
   'Quatros',
   'Cincos',
   'Seis',
   'Setes',
   'Oitos',
   'Noves',
-  'Dezes',
+  'Dez',
   'Valetes',
   'Damas',
   'Reis',

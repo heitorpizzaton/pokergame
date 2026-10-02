@@ -474,3 +474,26 @@
     padding-right: var(--safe-right);
   }
 }
+
+/* The dealer button: its own element so it can slide to the next seat (AGENTS.md §31.1.8). */
+.dealerButton {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-card-face);
+  color: var(--color-suit-black);
+  font-size: 0.66rem;
+  font-weight: 800;
+  box-shadow:
+    inset 0 0 0 1.5px var(--color-border-strong),
+    var(--shadow-card);
+  transition:
+    left calc(700ms * var(--anim-scale)) var(--ease-out),
+    top calc(700ms * var(--anim-scale)) var(--ease-out);
+  pointer-events: none;
+}

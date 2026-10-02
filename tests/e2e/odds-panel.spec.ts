@@ -36,12 +36,18 @@ test('starts minimized on a fresh profile and remembers the expanded state', asy
   await startGame(page);
   const panel = page.getByTestId('odds-panel');
   await expect(panel).toHaveAttribute('data-state', 'minimized');
-  await expect(page.getByTestId('odds-equity')).toHaveText(/^Equity \d/, { timeout: 20_000 });
+  // §31.1.2: the minimized pill hides the number, and nothing is computed until it is opened.
+  await expect(panel).toHaveText(new RegExp(strings.odds.reveal));
+  await expect(page.getByTestId('odds-equity')).toHaveCount(0);
   await expect(page.getByTestId('odds-details')).toHaveCount(0);
+  expect(
+    await page.evaluate(() => (window as unknown as { equityRequests: number }).equityRequests),
+  ).toBe(0);
 
   await panel.click();
   await expect(panel).toHaveAttribute('data-state', 'expanded');
   await expect(page.getByTestId('odds-details')).toBeVisible();
+  await expect(page.getByTestId('odds-equity')).toHaveText(/%$/, { timeout: 20_000 });
 
   await page.reload();
   await page.getByRole('button', { name: strings.menu.newGame }).click();
@@ -65,10 +71,13 @@ test('turning it off stops every probability computation for display', async ({ 
     localStorage.setItem('mesa-viva:settings', JSON.stringify({ oddsPanel: false }));
   });
   await startGame(page);
-  // Play a few decisions, then check that nothing was asked of the equity worker.
+  // Play a few decisions, then check that nothing was asked of the equity worker. Checking or
+  // folding never risks the stack, so the game cannot end before the toggle below.
   for (let i = 0; i < 6; i++) {
-    const call = page.getByTestId('act-call');
-    if (await call.isVisible().catch(() => false)) await call.click().catch(() => undefined);
+    const check = page.getByRole('button', { name: strings.actions.check, exact: true });
+    const fold = page.getByTestId('act-fold');
+    if (await check.isVisible().catch(() => false)) await check.click().catch(() => undefined);
+    else if (await fold.isVisible().catch(() => false)) await fold.click().catch(() => undefined);
     await page.waitForTimeout(150);
   }
   await expect(page.getByTestId('odds-panel')).toHaveCount(0);
@@ -76,9 +85,10 @@ test('turning it off stops every probability computation for display', async ({ 
     await page.evaluate(() => (window as unknown as { equityRequests: number }).equityRequests),
   ).toBe(0);
 
-  // Turning it back on computes again.
+  // Turning it back on and opening it computes again.
   await page.getByTestId('odds-toggle').click();
   await expect(page.getByTestId('odds-panel')).toBeVisible({ timeout: 20_000 });
+  await page.getByTestId('odds-panel').click();
   await expect
     .poll(() =>
       page.evaluate(() => (window as unknown as { equityRequests: number }).equityRequests),

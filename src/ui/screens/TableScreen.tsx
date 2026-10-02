@@ -1,13 +1,16 @@
 import { type CSSProperties, useState, useSyncExternalStore } from 'react';
 import { potInView } from '../../app/bet-sizing.ts';
 import type { GameController, TableSnapshot } from '../../app/game-controller.ts';
+import { flipDelayMs, PACING } from '../../app/pacing.ts';
 import type { Settings } from '../../app/settings.ts';
 import type { Card } from '../../core/cards/index.ts';
 import { cardLabel, formatBigBlinds, formatChips, handName, strings } from '../../i18n/index.ts';
 import type { EquityClient } from '../../workers/equity-client.ts';
 import { sound, useTableEffects } from '../audio/useTableEffects.ts';
 import { Icon } from '../icons.tsx';
+import { useCountUp } from '../anim/useCountUp.ts';
 import { ActionBar, PreActionBar } from '../table/ActionBar.tsx';
+import { ActionTimerBar } from '../table/ActionTimerBar.tsx';
 import { ChipStack } from '../table/ChipStack.tsx';
 import { OddsPanel } from '../table/OddsPanel.tsx';
 import { PlayingCard } from '../table/PlayingCard.tsx';
@@ -37,12 +40,6 @@ interface Props {
 function playTimerWarning(): void {
   sound.play('timerWarning');
 }
-
-/** Delay between hole cards in the deal animation (the controller waits for it). */
-const DEAL_STAGGER_MS = 70;
-/** Board cards turn over after the burn card. */
-const BURN_MS = 150;
-const FLOP_STAGGER_MS = 90;
 
 /** CSS variables for a flight between two table positions (container-query units). */
 function flight(from: SeatPosition, to: SeatPosition, extra: CSSProperties = {}): CSSProperties {
@@ -109,9 +106,20 @@ export function TableScreen({
         ? 0.55
         : 1;
 
+  // The controller waits for the same timings (AGENTS.md §31.1.3).
+  const pacing = PACING[snap.speed];
   const dealDelays = (seat: number): number[] =>
-    snap.dealOrder.flatMap((s, i) => (s === seat ? [i * DEAL_STAGGER_MS] : []));
-  const flipDelay = (i: number): number => BURN_MS + (i < 3 ? i * FLOP_STAGGER_MS : 0);
+    snap.dealOrder.flatMap((s, i) => (s === seat ? [i * pacing.dealStaggerMs] : []));
+  const flipDelay = (i: number): number => flipDelayMs(pacing, i);
+  const acting = snap.phase === 'npcTurn' || snap.phase === 'userTurn';
+  const countMs = motionScale === 0 ? 0 : Math.round(600 * motionScale);
+  const buttonSeat = view.seats[view.button];
+  // The dealer button sits just in front of its seat, toward the centre.
+  const buttonSeatAt = posOf(view.button);
+  const buttonAt = {
+    x: buttonSeatAt.x + (center.x - buttonSeatAt.x) * 0.24,
+    y: buttonSeatAt.y + (center.y - buttonSeatAt.y) * 0.24,
+  };
 
   return (
     <main
@@ -226,8 +234,12 @@ export function TableScreen({
               key={seat.seat}
               seat={seat}
               isUser={seat.seat === userSeat}
-              isButton={seat.seat === view.button && seat.status !== 'eliminated'}
-              isActing={view.toAct === seat.seat && snap.phase !== 'dealing'}
+              isButton={false}
+              isActing={view.toAct === seat.seat && acting}
+              thinking={view.toAct === seat.seat && seat.seat !== userSeat && acting}
+              concealShown={snap.hiddenShowdown.includes(seat.seat)}
+              muck={{ x: center.x - pos.x, y: center.y - pos.y }}
+              countMs={countMs}
               isWinner={winners.has(seat.seat)}
               lastAction={snap.lastActions[seat.seat]}
               holeCards={seat.seat === userSeat ? view.holeCards : null}
@@ -251,6 +263,19 @@ export function TableScreen({
             />
           );
         })}
+
+        {/* The dealer button slides to its new seat between hands (AGENTS.md §31.1.8). */}
+        {buttonSeat && buttonSeat.status !== 'eliminated' && (
+          <span
+            className={styles.dealerButton}
+            style={{ left: `${buttonAt.x + 7}%`, top: `${buttonAt.y}%` }}
+            role="img"
+            aria-label={strings.table.dealer}
+            data-testid="dealer-button"
+          >
+            {strings.table.dealerShort}
+          </span>
+        )}
 
         {/* Bets on the betting line, slid in from each seat. */}
         {view.seats.map((seat) => {
@@ -306,12 +331,12 @@ export function TableScreen({
           style={{ left: `${center.x}%`, top: `calc(${center.y}% - 36px)` }}
         >
           {collectedPot > 0 && !showResult && (
-            <ChipStack
+            <PotStack
               amount={collectedPot}
               smallBlind={view.smallBlind}
               bigBlind={view.bigBlind}
-              label={strings.table.potTotal(chips(collectedPot))}
-              testId="pot"
+              format={chips}
+              countMs={countMs}
             />
           )}
           <Pots snapshot={snap} />
@@ -382,7 +407,9 @@ export function TableScreen({
                     fourColor={settings.fourColorDeck}
                     enter="flip"
                     motion={
-                      { '--delay': `${(i - shown.length) * FLOP_STAGGER_MS}ms` } as CSSProperties
+                      {
+                        '--delay': `${(i - shown.length) * pacing.flopStaggerMs}ms`,
+                      } as CSSProperties
                     }
                   />
                 );
@@ -417,6 +444,13 @@ export function TableScreen({
               }}
             />
           )}
+        {snap.phase === 'userTurn' && snap.userClock && !snap.away && (
+          <ActionTimerBar
+            key={snap.userClock.startedAt}
+            clock={snap.userClock}
+            paused={snap.paused}
+          />
+        )}
         {snap.phase === 'userTurn' && view.legal && !snap.away ? (
           <ActionBar
             key={`${view.handNumber}-${view.actions.length}-${view.street ?? ''}`}
@@ -549,6 +583,32 @@ function resultLines(snapshot: TableSnapshot): string[] {
         : strings.table.wins(name, amount);
     return w.hand !== null ? `${text} · ${handName(w.hand)}` : text;
   });
+}
+
+/** The pot in the middle, its total counting up as bets gather (AGENTS.md §31.1.6). */
+function PotStack({
+  amount,
+  smallBlind,
+  bigBlind,
+  format,
+  countMs,
+}: {
+  readonly amount: number;
+  readonly smallBlind: number;
+  readonly bigBlind: number;
+  readonly format: (amount: number) => string;
+  readonly countMs: number;
+}) {
+  const shown = useCountUp(amount, countMs);
+  return (
+    <ChipStack
+      amount={amount}
+      smallBlind={smallBlind}
+      bigBlind={bigBlind}
+      label={strings.table.potTotal(format(shown))}
+      testId="pot"
+    />
+  );
 }
 
 function Pots({ snapshot }: { readonly snapshot: TableSnapshot }) {
